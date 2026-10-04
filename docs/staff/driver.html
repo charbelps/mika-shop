@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Deliveries</title>
+  <link rel="stylesheet" href="../css/staff.css">
+  <script src="../js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/staff-auth.js"></script>
+</head>
+<!-- Placeholder: the real driver screen is Phase 2. -->
+<body class="auth-pending">
+  <div class="app">
+    <header class="topbar">
+      <div class="who"><strong data-staff-name></strong><small data-staff-role></small></div>
+      <button type="button" class="btn btn-ghost btn-small" data-lang-toggle data-i18n="common.lang_toggle"></button>
+      <button type="button" class="btn btn-small" data-sign-out data-i18n="staff.sign_out"></button>
+    </header>
+    <main class="main">
+      <h1 data-i18n="staff.nav_delivery"></h1>
+      <p class="empty" data-i18n="staff.not_built"></p>
+    </main>
+  </div>
+  <script>StaffAuth.require(['DRIVER']);</script>
+</body>
+</html>

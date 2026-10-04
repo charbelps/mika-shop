@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Staff login</title>
+  <link rel="stylesheet" href="../css/staff.css">
+  <script src="../js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/staff-auth.js"></script>
+</head>
+<body class="auth-pending">
+  <main class="login-wrap">
+    <div class="login-card">
+      <div class="login-top">
+        <button type="button" class="btn btn-ghost btn-small" data-lang-toggle data-i18n="common.lang_toggle"></button>
+      </div>
+      <div class="shop-name" id="shop-name"></div>
+      <h1 data-i18n="staff.login_title"></h1>
+
+      <div id="login-error" class="alert alert-error" role="alert" hidden></div>
+
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="email" data-i18n="staff.email"></label>
+          <input id="email" name="email" type="email" autocomplete="username" dir="ltr" required>
+        </div>
+        <div class="field">
+          <label for="password" data-i18n="staff.password"></label>
+          <div class="input-with-btn">
+            <input id="password" name="password" type="password" autocomplete="current-password" dir="ltr" required>
+            <button type="button" class="btn" id="toggle-password" data-i18n="staff.show_password"></button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" data-i18n="staff.sign_in"></button>
+      </form>
+      <p class="hint" data-i18n="staff.forgot"></p>
+    </div>
+  </main>
+  <script>StaffAuth.initLoginPage();</script>
+</body>
+</html>
