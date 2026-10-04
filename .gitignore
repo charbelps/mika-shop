@@ -1,0 +1,22 @@
+# Local secrets: never commit
+.env
+.env.*
+
+# Project brief is private: backed up in the private repo mika-shop-backups (project-notes/)
+CLAUDE.md
+
+# Supabase CLI local files
+supabase/.temp/
+supabase/.branches/
+
+# Database dumps hold customer data: they belong ONLY in the private backups repo
+*.dump
+*.sql.gz
+*.backup
+
+# Tools / OS clutter
+node_modules/
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
