@@ -10,9 +10,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
           integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
           crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.7.0/papaparse.min.js"
+          integrity="sha384-Cac1u6+UwTX6dLDygwZYoxzTmqBikf22tn1qbNy+EVRSvn+FIh9oC/VRmAaL4Ih9"
+          crossorigin="anonymous"></script>
   <script src="../js/i18n.js"></script>
   <script src="../js/db.js"></script>
   <script src="../js/staff-auth.js"></script>
+  <script src="../js/photos.js"></script>
 </head>
 <body class="auth-pending">
   <div class="app">
@@ -21,15 +25,186 @@
       <button type="button" class="btn btn-ghost btn-small" data-lang-toggle data-i18n="common.lang_toggle"></button>
       <button type="button" class="btn btn-small" data-sign-out data-i18n="staff.sign_out"></button>
     </header>
+
     <nav class="nav">
-      <a href="admin.html" aria-current="page" data-roles="ADMIN"><span class="ico" aria-hidden="true">📦</span><span data-i18n="staff.nav_products"></span></a>
-      <a href="prep.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
+      <a href="#products" data-tab="products"><span class="ico" aria-hidden="true">📦</span><span data-i18n="staff.nav_products"></span></a>
+      <a href="#categories" data-tab="categories"><span class="ico" aria-hidden="true">🗂️</span><span data-i18n="staff.nav_categories"></span></a>
+      <a href="#import" data-tab="import"><span class="ico" aria-hidden="true">⬆️</span><span data-i18n="staff.nav_import"></span></a>
+      <a href="prep.html"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
     </nav>
+
     <main class="main">
-      <h1 data-i18n="staff.nav_products"></h1>
-      <p class="empty" data-i18n="staff.not_built"></p>
+      <!-- ================= PRODUCTS ================= -->
+      <section id="tab-products" hidden>
+        <div class="toolbar">
+          <h1 style="flex:1;margin:0" data-i18n="staff.nav_products"></h1>
+          <button type="button" class="btn btn-primary" id="btn-new-product" data-i18n="admin.new_product"></button>
+        </div>
+        <div class="toolbar">
+          <input type="search" id="p-search" data-i18n-placeholder="admin.search_products" autocomplete="off">
+          <select id="p-category" aria-label="Category"></select>
+          <select id="p-filter" aria-label="Filter">
+            <option value="" data-i18n="admin.filter_all"></option>
+            <option value="ar_review" data-i18n="admin.filter_ar_review"></option>
+            <option value="hidden" data-i18n="admin.filter_hidden"></option>
+            <option value="featured" data-i18n="admin.filter_featured"></option>
+          </select>
+        </div>
+        <p class="hint" id="p-count"></p>
+        <div class="list" id="p-list"></div>
+        <div class="pager" id="p-pager" hidden>
+          <button type="button" class="btn btn-small" id="p-prev" data-i18n="admin.prev"></button>
+          <span id="p-page"></span>
+          <button type="button" class="btn btn-small" id="p-next" data-i18n="admin.next"></button>
+        </div>
+      </section>
+
+      <!-- ================= CATEGORIES ================= -->
+      <section id="tab-categories" hidden>
+        <div class="toolbar">
+          <h1 style="flex:1;margin:0" data-i18n="staff.nav_categories"></h1>
+          <button type="button" class="btn btn-primary" id="btn-new-category" data-i18n="admin.new_category"></button>
+        </div>
+        <div class="list" id="c-list"></div>
+      </section>
+
+      <!-- ================= IMPORT (step 4) ================= -->
+      <section id="tab-import" hidden>
+        <h1 data-i18n="staff.nav_import"></h1>
+        <div id="import-root"><p class="empty" data-i18n="staff.not_built"></p></div>
+      </section>
     </main>
   </div>
-  <script>StaffAuth.require(['ADMIN']);</script>
+
+  <!-- ================= PRODUCT EDITOR ================= -->
+  <dialog class="sheet" id="product-dialog" aria-labelledby="pd-title">
+    <form id="product-form" method="dialog" novalidate>
+      <div class="sheet-head">
+        <h2 id="pd-title"></h2>
+        <button type="button" class="btn btn-ghost" data-close data-i18n="common.close"></button>
+      </div>
+      <div class="sheet-body">
+        <div class="alert alert-error" id="pd-error" role="alert" hidden></div>
+
+        <div class="field">
+          <label for="pd-sku">SKU</label>
+          <input id="pd-sku" name="sku" type="text" dir="ltr" autocomplete="off" required maxlength="40">
+          <p class="hint" data-i18n="admin.sku_hint"></p>
+        </div>
+
+        <div class="alert alert-warn" id="pd-ar-review" hidden>
+          <p style="margin:0 0 .5rem" data-i18n="admin.ar_review_note"></p>
+          <label class="check"><input type="checkbox" id="pd-ar-ok"> <span data-i18n="admin.ar_checked"></span></label>
+        </div>
+
+        <div class="field">
+          <label for="pd-name-en" data-i18n="admin.name_en"></label>
+          <input id="pd-name-en" name="name_en" type="text" dir="ltr" required>
+        </div>
+        <div class="field">
+          <label for="pd-name-ar" data-i18n="admin.name_ar"></label>
+          <input id="pd-name-ar" name="name_ar" type="text" dir="rtl" lang="ar">
+        </div>
+        <div class="field">
+          <label for="pd-desc-en" data-i18n="admin.desc_en"></label>
+          <textarea id="pd-desc-en" name="desc_en" dir="ltr"></textarea>
+        </div>
+        <div class="field">
+          <label for="pd-desc-ar" data-i18n="admin.desc_ar"></label>
+          <textarea id="pd-desc-ar" name="desc_ar" dir="rtl" lang="ar"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="pd-category" data-i18n="admin.category"></label>
+          <select id="pd-category" name="category_id"></select>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="pd-price" data-i18n="admin.price"></label>
+            <input id="pd-price" name="price" type="number" inputmode="decimal" min="0" step="0.01" dir="ltr" required>
+          </div>
+          <div class="field">
+            <label for="pd-compare" data-i18n="admin.compare_price"></label>
+            <input id="pd-compare" name="compare_price" type="number" inputmode="decimal" min="0" step="0.01" dir="ltr">
+          </div>
+        </div>
+
+        <fieldset>
+          <legend data-i18n="admin.photos"></legend>
+          <div class="photos" id="pd-photos"></div>
+          <input type="file" id="pd-photo-input" accept="image/jpeg,image/png,image/webp,image/heic,image/*" multiple hidden>
+          <p class="hint" data-i18n="admin.photos_hint"></p>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="admin.stock"></legend>
+          <label class="check"><input type="checkbox" id="pd-has-variants"> <span data-i18n="admin.has_variants"></span></label>
+          <div class="field" id="pd-stock-wrap">
+            <label for="pd-stock" data-i18n="admin.stock_qty"></label>
+            <input id="pd-stock" name="stock" type="number" inputmode="numeric" min="0" step="1" dir="ltr">
+          </div>
+          <div id="pd-variants-wrap" hidden>
+            <p class="hint" data-i18n="admin.variants_hint"></p>
+            <div id="pd-variants"></div>
+            <button type="button" class="btn btn-small" id="pd-add-variant" data-i18n="admin.add_variant"></button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="admin.visibility"></legend>
+          <label class="check"><input type="checkbox" id="pd-active"> <span data-i18n="admin.active"></span></label>
+          <label class="check"><input type="checkbox" id="pd-featured"> <span data-i18n="admin.featured"></span></label>
+        </fieldset>
+
+        <details id="pd-history-wrap" hidden>
+          <summary data-i18n="admin.stock_history"></summary>
+          <div class="list" id="pd-history" style="margin-top:.5rem"></div>
+        </details>
+      </div>
+      <div class="sheet-foot">
+        <button type="button" class="btn" data-close data-i18n="common.cancel"></button>
+        <button type="submit" class="btn btn-primary" id="pd-save" data-i18n="common.save"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= CATEGORY EDITOR ================= -->
+  <dialog class="sheet" id="category-dialog" aria-labelledby="cd-title">
+    <form id="category-form" method="dialog" novalidate>
+      <div class="sheet-head">
+        <h2 id="cd-title"></h2>
+        <button type="button" class="btn btn-ghost" data-close data-i18n="common.close"></button>
+      </div>
+      <div class="sheet-body">
+        <div class="alert alert-error" id="cd-error" role="alert" hidden></div>
+        <div class="field">
+          <label for="cd-name-en" data-i18n="admin.name_en"></label>
+          <input id="cd-name-en" type="text" dir="ltr" required>
+        </div>
+        <div class="field">
+          <label for="cd-name-ar" data-i18n="admin.name_ar"></label>
+          <input id="cd-name-ar" type="text" dir="rtl" lang="ar">
+        </div>
+        <div class="field">
+          <label for="cd-parent" data-i18n="admin.parent_category"></label>
+          <select id="cd-parent"></select>
+        </div>
+        <div class="field">
+          <label for="cd-sort" data-i18n="admin.sort"></label>
+          <input id="cd-sort" type="number" step="1" dir="ltr" inputmode="numeric">
+          <p class="hint" data-i18n="admin.sort_hint"></p>
+        </div>
+        <label class="check"><input type="checkbox" id="cd-active"> <span data-i18n="admin.active"></span></label>
+      </div>
+      <div class="sheet-foot">
+        <button type="button" class="btn" data-close data-i18n="common.cancel"></button>
+        <button type="submit" class="btn btn-primary" id="cd-save" data-i18n="common.save"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="../js/admin.js"></script>
+  <script src="../js/import.js"></script>
 </body>
 </html>
