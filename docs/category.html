@@ -16,21 +16,16 @@
 <body>
   <header id="site-header"></header>
   <main class="wrap">
-    <section class="section">
-      <h2 data-i18n="shop.categories"></h2>
-      <div class="cat-grid" id="home-categories"></div>
-    </section>
-    <section class="section">
-      <div class="section-head">
-        <h2 id="home-featured-title"></h2>
-        <a href="category.html" data-i18n="shop.see_all"></a>
-      </div>
-      <div class="grid" id="home-featured"></div>
-    </section>
+    <nav class="crumbs" id="crumbs"></nav>
+    <h1 id="cat-title"></h1>
+    <div class="chips" id="cat-chips"></div>
+    <p class="muted" id="cat-count"></p>
+    <div class="grid" id="cat-grid"></div>
+    <nav class="pager" id="cat-pager" hidden></nav>
   </main>
   <footer id="site-footer"></footer>
   <script src="js/cart.js"></script>
   <script src="js/shop.js"></script>
-  <script>Shop.initHome();</script>
+  <script>Shop.initCategory();</script>
 </body>
 </html>

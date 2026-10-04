@@ -25,6 +25,11 @@
       return `${cfg.supabaseUrl}/storage/v1/object/public/product-photos/${clean}`;
     },
 
+    // Thumbnail (400px) of a stored photo: "<SKU>/<id>.jpg" -> "<SKU>/<id>_t.jpg".
+    thumbUrl(path) {
+      return path ? this.photoUrl(String(path).replace(/\.jpg$/i, '_t.jpg')) : '';
+    },
+
     // Settings the current user may read, as { key: value }. Cached per page load.
     settings() {
       settingsPromise ||= client.from('settings').select('key,value').then(({ data, error }) => {
