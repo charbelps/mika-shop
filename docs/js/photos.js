@@ -64,6 +64,22 @@
     return path;
   }
 
+  // Bulk import: fixed name "<SKU>/import-<n>.jpg", replaced if uploaded again
+  // (so re-running an import never creates duplicates).
+  async function uploadAs(sku, file, n) {
+    const bitmap = await decode(file);
+    const [main, thumb] = await Promise.all([resize(bitmap, MAIN_PX), resize(bitmap, THUMB_PX)]);
+    if (bitmap.close) bitmap.close();
+    const path = `${sku}/import-${n}.jpg`;
+    const store = DB.client.storage.from(BUCKET);
+    const opts = { contentType: 'image/jpeg', cacheControl: '3600', upsert: true };
+    const r1 = await store.upload(path, main, opts);
+    if (r1.error) throw r1.error;
+    const r2 = await store.upload(thumbPath(path), thumb, opts);
+    if (r2.error) throw r2.error;
+    return path;
+  }
+
   // Deletes photos (main + thumbnail) from storage. Only the web copies:
   // the original photos stay in Google Drive.
   async function remove(paths) {
@@ -74,7 +90,7 @@
   }
 
   window.Photos = {
-    MAIN_PX, THUMB_PX, resize, upload, remove, thumbPath,
+    MAIN_PX, THUMB_PX, resize, upload, uploadAs, remove, thumbPath,
     url: (path) => DB.photoUrl(path),
     thumbUrl: (path) => (path ? DB.photoUrl(thumbPath(path)) : ''),
   };
