@@ -30,6 +30,26 @@
       return path ? this.photoUrl(String(path).replace(/\.jpg$/i, '_t.jpg')) : '';
     },
 
+    // Same rules as the SQL function normalize_phone(): +961 followed by 7 or 8 digits, or null.
+    // Accepts 0 / 961 / +961 / 00961 prefixes, spaces, dashes, dots, brackets, Arabic digits.
+    // Used by the checkout and by the staff "New order" screen.
+    normalizePhone(raw) {
+      let s = String(raw || '')
+        .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+        .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+        .replace(/[\s\-().\/]/g, '');
+      if (s.startsWith('+')) {
+        if (!s.startsWith('+961')) return null;
+        s = s.slice(4);
+      } else if (s.startsWith('00961')) {
+        s = s.slice(5);
+      } else if (s.startsWith('961') && s.length >= 10) {
+        s = s.slice(3);
+      }
+      if (s.startsWith('0')) s = s.slice(1);
+      return /^\d{7,8}$/.test(s) ? '+961' + s : null;
+    },
+
     // Settings the current user may read, as { key: value }. Cached per page load.
     settings() {
       settingsPromise ||= client.from('settings').select('key,value').then(({ data, error }) => {

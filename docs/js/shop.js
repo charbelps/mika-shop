@@ -89,6 +89,12 @@
     const digits = String(S.whatsapp_number || '').replace(/\D/g, '');
     return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : '';
   }
+  // "Call us" link (F7): only once the shop's phone_number setting is filled.
+  function telLink() {
+    const raw = String(S.phone_number || '').trim();
+    if (!raw) return '';
+    return 'tel:' + (DB.normalizePhone(raw) || raw.replace(/[^\d+]/g, ''));
+  }
 
   // ---------- header & footer ----------
   function renderChrome() {
@@ -113,7 +119,7 @@
     const f = document.getElementById('site-footer');
     if (f) {
       f.className = 'site-footer';
-      f.innerHTML = `<div class="wrap"><p data-shop-name></p><p><a href="track.html" data-i18n="trk.footer_link"></a></p><p id="footer-wa"></p></div>`;
+      f.innerHTML = `<div class="wrap"><p data-shop-name></p><p><a href="track.html" data-i18n="trk.footer_link"></a></p><p id="footer-wa"></p><p id="footer-call"></p></div>`;
     }
   }
   function updateCartCount() {
@@ -132,6 +138,8 @@
     document.querySelectorAll('[data-shop-name]').forEach((el) => { el.textContent = shopName(); });
     const wa = waLink(t('shop.wa_hello'));
     if (wa && $('#footer-wa')) $('#footer-wa').innerHTML = `<a href="${esc(wa)}" target="_blank" rel="noopener">${esc(t('shop.contact_whatsapp'))}</a>`;
+    const tel = telLink();
+    if (tel && $('#footer-call')) $('#footer-call').innerHTML = `<a href="${esc(tel)}">📞 ${esc(t('shop.call_us'))}</a>`;
     updateCartCount();
     window.addEventListener('cart:change', updateCartCount);
     window.addEventListener('storage', updateCartCount); // other tabs
@@ -296,6 +304,7 @@
             <button type="button" class="btn btn-primary" id="pp-add">${esc(t('shop.add_to_cart'))}</button>
           </div>
           <a class="btn btn-wa btn-block" id="pp-wa" target="_blank" rel="noopener" hidden>${esc(t('shop.ask_whatsapp'))}</a>
+          <a class="btn btn-block" id="pp-call" hidden>📞 ${esc(t('shop.call_us'))}</a>
           <div class="share-row">
             <a class="btn" id="pp-share-wa" target="_blank" rel="noopener">${esc(t('shop.share_whatsapp'))}</a>
             <button type="button" class="btn" id="pp-share" hidden>↗ ${esc(t('shop.share'))}</button>
@@ -375,6 +384,8 @@
 
     const wa = waLink(t('shop.wa_ask', { name, sku: p.sku, url: location.href }));
     if (wa) { const a = $('#pp-wa'); a.href = wa; a.hidden = false; }
+    const tel = telLink();
+    if (tel) { const a = $('#pp-call'); a.href = tel; a.hidden = false; }
 
     // Share: WhatsApp link (customer picks the contact) + the phone's own share menu when it has one.
     const shareUrl = `${location.origin}${location.pathname}?sku=${encodeURIComponent(p.sku)}`;
@@ -406,6 +417,6 @@
 
   window.Shop = {
     boot, initHome, initCategory, initProduct, toast, esc, money,
-    settings: () => S, shopName, setTitle, photoImg, waLink, allCategories,
+    settings: () => S, shopName, setTitle, photoImg, waLink, telLink, allCategories,
   };
 })();

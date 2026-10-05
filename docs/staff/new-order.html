@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>New order</title>
+  <link rel="stylesheet" href="../css/staff.css">
+  <script src="../js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/staff-auth.js"></script>
+</head>
+<body class="auth-pending">
+  <div class="app">
+    <header class="topbar">
+      <div class="who"><strong data-staff-name></strong><small data-staff-role></small></div>
+      <button type="button" class="btn btn-ghost btn-small" data-lang-toggle data-i18n="common.lang_toggle"></button>
+      <button type="button" class="btn btn-small" data-sign-out data-i18n="staff.sign_out"></button>
+    </header>
+    <nav class="nav">
+      <a href="admin.html" data-roles="ADMIN"><span class="ico" aria-hidden="true">📦</span><span data-i18n="staff.nav_products"></span></a>
+      <a href="prep.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
+      <a href="new-order.html" aria-current="page" data-roles="ADMIN"><span class="ico" aria-hidden="true">➕</span><span data-i18n="staff.nav_new_order"></span></a>
+    </nav>
+    <main class="main">
+      <!-- shown after the order is created -->
+      <section id="no-done" class="card no-done" hidden></section>
+
+      <!-- onsubmit: never let the browser submit by itself (customer details would end up in the
+           address bar if pressed before the page is ready); new-order.js handles the button. -->
+      <form id="no-form" novalidate autocomplete="off" onsubmit="return false">
+        <div class="toolbar">
+          <h1 style="flex:1;margin:0" data-i18n="no.title"></h1>
+          <button type="button" class="btn btn-ghost btn-small" id="no-reset" data-i18n="no.start_over"></button>
+        </div>
+        <p class="hint" data-i18n="no.intro"></p>
+
+        <div class="no-cols">
+        <div class="no-main">
+        <fieldset>
+          <legend data-i18n="no.source"></legend>
+          <div class="chips-row toolbar" id="no-sources" role="radiogroup" style="margin:0">
+            <button type="button" class="chip-btn" role="radio" data-source="PHONE" aria-pressed="false">☎️ <span data-i18n="no.source_PHONE"></span></button>
+            <button type="button" class="chip-btn" role="radio" data-source="INSTAGRAM" aria-pressed="false">📷 <span data-i18n="no.source_INSTAGRAM"></span></button>
+            <button type="button" class="chip-btn" role="radio" data-source="WHATSAPP" aria-pressed="false">💬 <span data-i18n="no.source_WHATSAPP"></span></button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="no.items"></legend>
+          <div class="field" style="margin-block-end:.5rem">
+            <label for="no-search" data-i18n="no.find_product"></label>
+            <input type="search" id="no-search" data-i18n-placeholder="no.find_ph" autocomplete="off" enterkeyhint="search">
+          </div>
+          <div class="list" id="no-results"></div>
+          <div id="no-lines" class="no-lines"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="no.customer"></legend>
+          <div class="field">
+            <label for="no-phone" data-i18n="co.f_phone"></label>
+            <input id="no-phone" name="phone" type="tel" inputmode="tel" dir="ltr" maxlength="25" placeholder="70 123 456">
+            <p class="hint" id="no-phone-hint"></p>
+          </div>
+          <div class="alert alert-ok no-known" id="no-known" hidden></div>
+          <div class="field">
+            <label for="no-name" data-i18n="co.f_name"></label>
+            <input id="no-name" name="name" type="text" maxlength="80">
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="no-gov" data-i18n="co.f_governorate"></label>
+              <select id="no-gov" name="governorate"></select>
+            </div>
+            <div class="field">
+              <label for="no-dis" data-i18n="co.f_district"></label>
+              <select id="no-dis" name="district"></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="no-town" data-i18n="co.f_town"></label>
+            <input id="no-town" name="town" type="text" maxlength="80">
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="no-building" data-i18n="co.f_building"></label>
+              <input id="no-building" name="building" type="text" maxlength="80">
+            </div>
+            <div class="field">
+              <label for="no-floor" data-i18n="co.f_floor"></label>
+              <input id="no-floor" name="floor" type="text" maxlength="20">
+            </div>
+          </div>
+          <div class="field">
+            <label for="no-street" data-i18n="co.f_street"></label>
+            <input id="no-street" name="street" type="text" maxlength="150">
+          </div>
+          <div class="field">
+            <label for="no-landmark" data-i18n="co.f_landmark"></label>
+            <input id="no-landmark" name="landmark" type="text" maxlength="150">
+          </div>
+          <div class="field" style="margin:0">
+            <label for="no-loc" data-i18n="co.f_location_url"></label>
+            <input id="no-loc" name="location_url" type="url" inputmode="url" dir="ltr" maxlength="500" placeholder="https://maps.app.goo.gl/…">
+          </div>
+        </fieldset>
+        </div>
+
+        <div class="no-side">
+        <fieldset>
+          <legend data-i18n="co.payment"></legend>
+          <div id="no-payments"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="co.summary"></legend>
+          <div class="od-sum"><span data-i18n="cart.subtotal"></span><span id="no-subtotal"></span></div>
+          <div class="od-sum" id="no-fee"></div>
+          <div class="od-sum total"><span data-i18n="co.total"></span><strong id="no-total"></strong></div>
+        </fieldset>
+
+        <div class="field">
+          <label for="no-notes" data-i18n="prep.notes"></label>
+          <textarea id="no-notes" name="notes" maxlength="1000"></textarea>
+        </div>
+
+        <div class="alert alert-error" id="no-error" role="alert" hidden></div>
+        <button type="submit" class="btn btn-primary btn-block" id="no-submit" data-i18n="no.create"></button>
+        <p class="hint" data-i18n="no.create_hint"></p>
+        </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <script src="../js/new-order.js"></script>
+</body>
+</html>

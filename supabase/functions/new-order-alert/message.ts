@@ -22,7 +22,15 @@ export interface Order {
   delivery_fee: number | string;
   total: number | string;
   payment_method: string;
+  source?: string | null;
 }
+
+// Orders Mika entered herself (F7). Website orders get no extra line.
+const SOURCE: Record<string, string> = {
+  PHONE: '☎️ Taken by phone',
+  INSTAGRAM: '📷 Taken on Instagram',
+  WHATSAPP: '💬 Taken on WhatsApp',
+};
 
 const PAY: Record<string, string> = {
   COD: '💵 Cash on delivery',
@@ -39,6 +47,7 @@ function amount(n: number | string, currency: string): string {
 export function buildMessage(order: Order, items: OrderItem[], currency = ''): string {
   const lines: string[] = [];
   lines.push(`🛒 New order ${order.order_no}`);
+  if (order.source && SOURCE[order.source]) lines.push(SOURCE[order.source]);
   lines.push('');
   lines.push(`👤 ${order.name}`);
   lines.push(`📞 ${order.phone}`);

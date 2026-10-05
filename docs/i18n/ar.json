@@ -39,7 +39,8 @@
     "nav_import": "استيراد",
     "nav_orders": "الطلبات",
     "nav_delivery": "التوصيل",
-    "not_built": "ستتم إضافة هذه الشاشة في مرحلة لاحقة."
+    "not_built": "ستتم إضافة هذه الشاشة في مرحلة لاحقة.",
+    "nav_new_order": "طلب جديد"
   },
   "admin": {
     "new_product": "منتج جديد",
@@ -200,7 +201,8 @@
     "measurements": "القياسات",
     "share_whatsapp": "شارك عبر واتساب",
     "share": "مشاركة…",
-    "share_text": "شوف هيدا: {name}"
+    "share_text": "شوف هيدا: {name}",
+    "call_us": "اتصل بنا"
   },
   "cart": {
     "title": "سلّتك",
@@ -351,7 +353,15 @@
     "slip_total": "Total / المجموع",
     "slip_collect": "COLLECT / تحصيل",
     "slip_paid": "PAID — don't collect / مدفوع — لا تحصّل",
-    "slip_delivery": "Delivery / التوصيل"
+    "slip_delivery": "Delivery / التوصيل",
+    "new_order_btn": "+ طلب جديد",
+    "src_PHONE": "☎️ هاتف",
+    "src_INSTAGRAM": "📷 إنستغرام",
+    "src_WHATSAPP": "💬 واتساب",
+    "slip_source": "Taken by / الطلب عبر",
+    "slip_src_PHONE": "Phone / هاتف",
+    "slip_src_INSTAGRAM": "Instagram / إنستغرام",
+    "slip_src_WHATSAPP": "WhatsApp / واتساب"
   },
   "trk": {
     "title": "تتبّع طلبك",
@@ -367,5 +377,45 @@
     "note_RETURNED": "تم إرجاع هذا الطلب. لأي سؤال، تواصل معنا عبر واتساب.",
     "note_FAILED_ATTEMPT": "تعذّر تسليم طلبك. سنتواصل معك لتحديد موعد جديد.",
     "footer_link": "تتبّع طلبي"
+  },
+  "no": {
+    "title": "طلب جديد",
+    "intro": "للطلبات المأخوذة عبر الهاتف أو إنستغرام أو واتساب. يتم التحقق من الأسعار والمخزون مجدداً عند إنشاء الطلب.",
+    "start_over": "البدء من جديد",
+    "start_over_q": "مسح هذا الطلب والبدء من جديد؟",
+    "source": "من أين جاء الطلب؟",
+    "source_PHONE": "اتصال هاتفي",
+    "source_INSTAGRAM": "إنستغرام",
+    "source_WHATSAPP": "واتساب",
+    "items": "المنتجات",
+    "find_product": "البحث عن منتج",
+    "find_ph": "الاسم أو SKU أو كلمة بحث…",
+    "no_results": "لم يتم العثور على منتج.",
+    "in_stock": "{n} في المخزون",
+    "sold_out": "نفد",
+    "options": "اختر الخيار",
+    "added": "تمت الإضافة: {name}",
+    "no_items": "لا منتجات بعد: ابحث في الأعلى واضغط على منتج.",
+    "customer": "الزبون",
+    "known": "زبون محفوظ: {name} ({n} طلبات سابقة).",
+    "use_saved": "استعمال المعلومات المحفوظة",
+    "no_fee": "لم يُحدَّد سعر التوصيل",
+    "pay_missing": "يظهر Whish و OMT هنا بعد تعبئة معلوماتهما في الإعدادات.",
+    "create": "إنشاء الطلب",
+    "creating": "جارٍ الإنشاء…",
+    "create_hint": "يُحفظ الطلب كمؤكَّد ويظهر في شاشة الطلبات.",
+    "done_title": "تم إنشاء الطلب",
+    "done_hint": "أصبح الطلب في شاشة الطلبات، جاهزاً للتغليف.",
+    "open_order": "فتح الطلب",
+    "another": "إدخال طلب آخر",
+    "err_INVALID_PHONE": "تحقق من رقم الهاتف.",
+    "err_ZONE_FEE_NOT_SET": "لا يوجد سعر توصيل لهذا القضاء بعد. اطلب من شربل تحديده أولاً.",
+    "err_ZONE_NOT_FOUND": "اختر القضاء من جديد.",
+    "err_EMPTY_CART": "أضف منتجاً واحداً على الأقل.",
+    "err_TOO_MANY_ITEMS": "عدد كبير جداً من المنتجات المختلفة (50 كحد أقصى).",
+    "err_INVALID_INPUT": "بعض المعلومات ناقصة أو طويلة جداً.",
+    "err_PAYMENT_NOT_AVAILABLE": "طريقة الدفع هذه غير مُعدّة بعد.",
+    "err_OUT_OF_STOCK": "المخزون غير كافٍ لـ {sku}. خفّف الكمية أو احذفه.",
+    "err_ITEM_UNAVAILABLE": "{sku} مخفي أو لم يعد متوفراً. احذفه من الطلب."
   }
 }

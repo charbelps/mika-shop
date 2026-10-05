@@ -8,24 +8,8 @@
   const lineName = (l) => (I18n.lang === 'ar' && l.name_ar ? l.name_ar : l.name_en);
   const lineLabel = (l) => (I18n.lang === 'ar' && l.label_ar ? l.label_ar : l.label_en) || '';
 
-  // Same rules as the SQL function normalize_phone(): +961 followed by 7 or 8 digits.
-  // Accepts 0 / 961 / +961 / 00961 prefixes, spaces, dashes, dots, brackets, Arabic digits.
-  function normalizePhone(raw) {
-    let s = String(raw || '')
-      .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
-      .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-      .replace(/[\s\-().\/]/g, '');
-    if (s.startsWith('+')) {
-      if (!s.startsWith('+961')) return null;
-      s = s.slice(4);
-    } else if (s.startsWith('00961')) {
-      s = s.slice(5);
-    } else if (s.startsWith('961') && s.length >= 10) {
-      s = s.slice(3);
-    }
-    if (s.startsWith('0')) s = s.slice(1);
-    return /^\d{7,8}$/.test(s) ? '+961' + s : null;
-  }
+  // Same rules as the SQL function normalize_phone() (shared with the staff screens, see db.js).
+  const normalizePhone = (raw) => DB.normalizePhone(raw);
 
   // ---------- cart page ----------
   async function initCart() {

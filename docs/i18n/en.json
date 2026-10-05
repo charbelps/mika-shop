@@ -39,7 +39,8 @@
     "nav_import": "Import",
     "nav_orders": "Orders",
     "nav_delivery": "Delivery",
-    "not_built": "This screen will be added in a later step."
+    "not_built": "This screen will be added in a later step.",
+    "nav_new_order": "New order"
   },
   "admin": {
     "new_product": "New product",
@@ -200,7 +201,8 @@
     "measurements": "Measurements",
     "share_whatsapp": "Share on WhatsApp",
     "share": "Share…",
-    "share_text": "Look at this: {name}"
+    "share_text": "Look at this: {name}",
+    "call_us": "Call us"
   },
   "cart": {
     "title": "Your cart",
@@ -351,7 +353,15 @@
     "slip_total": "Total / المجموع",
     "slip_collect": "COLLECT / تحصيل",
     "slip_paid": "PAID — don't collect / مدفوع — لا تحصّل",
-    "slip_delivery": "Delivery / التوصيل"
+    "slip_delivery": "Delivery / التوصيل",
+    "new_order_btn": "+ New order",
+    "src_PHONE": "☎️ Phone",
+    "src_INSTAGRAM": "📷 Instagram",
+    "src_WHATSAPP": "💬 WhatsApp",
+    "slip_source": "Taken by / الطلب عبر",
+    "slip_src_PHONE": "Phone / هاتف",
+    "slip_src_INSTAGRAM": "Instagram / إنستغرام",
+    "slip_src_WHATSAPP": "WhatsApp / واتساب"
   },
   "trk": {
     "title": "Track your order",
@@ -367,5 +377,45 @@
     "note_RETURNED": "This order was returned. For any question, contact us on WhatsApp.",
     "note_FAILED_ATTEMPT": "We couldn't deliver your order. We'll contact you to arrange a new time.",
     "footer_link": "Track my order"
+  },
+  "no": {
+    "title": "New order",
+    "intro": "For orders taken by phone, Instagram or WhatsApp. Prices and stock are checked again when you create the order.",
+    "start_over": "Start over",
+    "start_over_q": "Clear this order and start again?",
+    "source": "Where did the order come from?",
+    "source_PHONE": "Phone call",
+    "source_INSTAGRAM": "Instagram",
+    "source_WHATSAPP": "WhatsApp",
+    "items": "Items",
+    "find_product": "Find a product",
+    "find_ph": "Name, SKU or search word…",
+    "no_results": "No product found.",
+    "in_stock": "{n} in stock",
+    "sold_out": "Sold out",
+    "options": "Choose option",
+    "added": "Added: {name}",
+    "no_items": "No items yet: search above and tap a product.",
+    "customer": "Customer",
+    "known": "Saved customer: {name} ({n} orders before).",
+    "use_saved": "Use saved details",
+    "no_fee": "no delivery fee set",
+    "pay_missing": "Whish and OMT appear here once their details are filled in the settings.",
+    "create": "Create order",
+    "creating": "Creating…",
+    "create_hint": "The order is saved as Confirmed and appears on the Orders screen.",
+    "done_title": "Order created",
+    "done_hint": "It's on the Orders screen now, ready to pack.",
+    "open_order": "Open the order",
+    "another": "Enter another order",
+    "err_INVALID_PHONE": "Check the phone number.",
+    "err_ZONE_FEE_NOT_SET": "This district has no delivery fee yet. Ask Charbel to set it first.",
+    "err_ZONE_NOT_FOUND": "Choose the district again.",
+    "err_EMPTY_CART": "Add at least one item.",
+    "err_TOO_MANY_ITEMS": "Too many different items (50 at most).",
+    "err_INVALID_INPUT": "Some details are missing or too long.",
+    "err_PAYMENT_NOT_AVAILABLE": "This payment method isn't set up yet.",
+    "err_OUT_OF_STOCK": "Not enough stock for {sku}. Lower the quantity or remove it.",
+    "err_ITEM_UNAVAILABLE": "{sku} is hidden or no longer available. Remove it from the order."
   }
 }

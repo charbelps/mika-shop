@@ -36,6 +36,8 @@
     const cls = o.payment_status === 'PAID' ? 'pill-ok' : o.payment_status === 'AWAITING' ? 'pill-warn' : '';
     return `<span class="pill ${cls}">${esc(t('prep.method_' + o.payment_method))} · ${esc(t('status.pay_' + o.payment_status))}</span>`;
   }
+  // Orders Mika entered herself (F7); website orders get no pill.
+  const srcPill = (o) => (o.source && o.source !== 'WEBSITE' ? ` <span class="pill">${esc(t('prep.src_' + o.source))}</span>` : '');
   function statusPill(s) {
     const cls = s === 'CANCELLED' || s === 'RETURNED' ? 'pill-off' : s === 'NEW' ? 'pill-danger' : s === 'PACKED' ? 'pill-ok' : '';
     return `<span class="pill ${cls}">${esc(t('status.' + s))}</span>`;
@@ -45,7 +47,7 @@
   async function load() {
     const reqId = ++state.req;
     let q = DB.client.from('orders')
-      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status', { count: 'exact' })
+      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(state.page * PAGE, state.page * PAGE + PAGE - 1);
     if (state.tab === 'todo') q = q.in('status', ['NEW', 'CONFIRMED']);
@@ -78,7 +80,7 @@
       b.innerHTML = `<div class="body">
           <div class="title"><span dir="ltr">${esc(o.order_no)}</span> · ${esc(o.name)}</div>
           <div class="meta">${esc(when(o.created_at))} · ${esc(o.district)}</div>
-          <div>${statusPill(o.status)} ${payPill(o)}</div>
+          <div>${statusPill(o.status)} ${payPill(o)}${srcPill(o)}</div>
         </div>
         <div class="end"><strong>${money(o.total)}</strong></div>`;
       b.addEventListener('click', () => open(o.id));
@@ -116,7 +118,7 @@
     const awaiting = o.payment_status === 'AWAITING' && !['CANCELLED', 'RETURNED'].includes(o.status);
     const done = ['CANCELLED', 'RETURNED'].includes(o.status);
     $('#od-body').innerHTML = `
-      <div class="od-pills">${statusPill(o.status)} ${payPill(o)} ${canEdit ? '' : `<span class="pill">${esc(t('prep.readonly'))}</span>`}</div>
+      <div class="od-pills">${statusPill(o.status)} ${payPill(o)}${srcPill(o)} ${canEdit ? '' : `<span class="pill">${esc(t('prep.readonly'))}</span>`}</div>
       <p class="meta">${esc(when(o.created_at))}</p>
       ${o.cancel_reason ? `<div class="alert alert-warn">${esc(t('prep.cancelled_because', { reason: o.cancel_reason }))}</div>` : ''}
 
@@ -229,6 +231,7 @@
       <table class="slip-to"><tbody>
         <tr><th>${esc(t('prep.slip_customer'))}</th><td>${esc(o.name)}</td></tr>
         <tr><th>${esc(t('prep.slip_phone'))}</th><td dir="ltr">${esc(o.phone)}</td></tr>
+        ${o.source && o.source !== 'WEBSITE' ? `<tr><th>${esc(t('prep.slip_source'))}</th><td>${esc(t('prep.slip_src_' + o.source))}</td></tr>` : ''}
         <tr><th>${esc(t('prep.slip_address'))}</th><td>${esc(o.town)}, ${esc(o.district)} (${esc(o.governorate)})<br>${esc(o.address)}${o.landmark ? '<br>' + esc(o.landmark) : ''}</td></tr>
       </tbody></table>
       <table class="slip-items"><thead><tr><th>${esc(t('prep.slip_item'))}</th><th>${esc(t('prep.slip_qty'))}</th></tr></thead><tbody>
@@ -263,5 +266,8 @@
     });
 
   load();
+  // prep.html?open=123 (link from the New order screen): open that order straight away.
+  const openId = Number(new URLSearchParams(location.search).get('open'));
+  if (Number.isInteger(openId) && openId > 0) open(openId);
   window.Prep = { load, open, onChange, printSlip };
 })();
