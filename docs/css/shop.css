@@ -26,7 +26,8 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; font-family: var(--font); font-size: 16px; line-height: 1.5; color: var(--text); background: var(--bg); }
+body { margin: 0; font-family: var(--font); font-size: 16px; line-height: 1.5; color: var(--text); background: var(--bg);
+       min-height: 100vh; display: flex; flex-direction: column; }   /* footer stays at the bottom on short pages */
 img { max-width: 100%; display: block; }
 a { color: inherit; }
 h1, h2, h3 { line-height: 1.25; margin: 0 0 .5em; }
@@ -74,7 +75,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 .search-row input { min-height: 44px; }
 
 /* ---------- sections ---------- */
-main { padding-block: 1rem 3rem; min-height: 60vh; }
+main { padding-block: 1rem 3rem; min-height: 60vh; flex: 1 0 auto; width: 100%; }
 .section { margin-block: 1.25rem 2rem; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 .section-head a { color: var(--brand); font-weight: 600; text-decoration: none; font-size: .95rem; }
@@ -150,8 +151,8 @@ main { padding-block: 1rem 3rem; min-height: 60vh; }
 .buy { display: flex; flex-direction: column; gap: .6rem; margin-block: 1rem; }
 .buy-row { display: flex; gap: .6rem; }
 .buy-row .btn-primary { flex: 1; }
-.share-row { display: flex; gap: .6rem; }
-.share-row .btn { flex: 1; }
+.share-row { display: flex; flex-wrap: wrap; gap: .6rem; }
+.share-row .btn { flex: 1 1 auto; white-space: nowrap; }   /* side by side when they fit, stacked on small phones */
 .desc { white-space: pre-line; margin-block-start: 1rem; }
 .measure { margin-block-start: 1rem; padding: .7rem .9rem; border-radius: var(--radius); background: var(--brand-soft); }
 .measure .label { margin-block-end: .15rem; }
@@ -206,6 +207,14 @@ input[dir=ltr] { text-align: start; }
 .pay-info { display: block; color: var(--muted); font-size: .9rem; white-space: pre-line; }
 .check-line { display: flex; gap: .6rem; align-items: center; margin-block: .5rem 1rem; }
 .check-line input { width: 22px; height: 22px; min-height: 0; }
+
+/* Cart + checkout on wide screens: items/form on one side, summary + button on the other (stays in view). */
+@media (min-width: 960px) {
+  .wrap.narrow.two-col { max-width: var(--wrap); }
+  #co-form, #cart:has(.summary) { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 1.5rem; align-items: start; }
+  .co-side, #cart .summary { position: sticky; inset-block-start: 132px; }
+  #cart .summary { margin-block-start: 0; }
+}
 
 /* ---------- track order (step 11) ---------- */
 .trk-status { font-size: 1.5rem; margin-block: .2rem .8rem; }

@@ -128,7 +128,7 @@ input[dir=ltr] { text-align: start; }
   }
   .nav a { flex: 0 0 auto; flex-direction: row; justify-content: flex-start; gap: .7rem;
            padding: .8rem 1.2rem; font-size: 1rem; }
-  .main { padding: 1.5rem; }
+  .main { padding: 1.5rem; margin-inline: auto; }
 }
 
 /* ---------- lists & cards ---------- */
@@ -180,6 +180,8 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.4); }
 .sheet-foot .btn-primary { flex: 1; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+/* grid-2 with long labels: one column on phones so labels don't squeeze */
+@media (max-width: 599px) { .grid-2.stack-sm { grid-template-columns: 1fr; gap: 0; } }
 fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: .75rem; margin: 0 0 1rem; background: var(--surface); }
 legend { font-weight: 600; padding: 0 .3rem; }
 
@@ -207,6 +209,7 @@ legend { font-weight: 600; padding: 0 .3rem; }
   background: #1c1917; color: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.2);
 }
 .toast.error { background: var(--danger); }
+@media (min-width: 900px) { .toast { inset-block-end: 16px; } }   /* no bottom nav on wide screens */
 
 /* ---------- prep screen (step 9) ---------- */
 .chips-row { gap: .4rem; }
