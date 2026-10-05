@@ -286,3 +286,15 @@ input[aria-invalid=true], select[aria-invalid=true] { border-color: var(--danger
 }
 .z-savebar .btn-primary { flex: 1; }
 @media (min-width: 900px) { .z-savebar { inset-block-end: 0; inset-inline-start: 220px; } }
+
+/* ---------- staff tab (Phase 1c, A3) ---------- */
+.label-like { display: block; font-weight: 500; margin-block-end: .3rem; }
+.st-row.off { opacity: .7; }
+.st-who strong { font-size: 1.05rem; }
+.st-head { margin-block-end: .5rem; }
+.st-edit { margin-block-start: .75rem; border-block-start: 1px solid var(--line); padding-block-start: .75rem; }
+.st-edit label { font-size: .85rem; }
+.st-role { align-items: flex-start; padding-block: .3rem; }
+.st-role input { margin-block-start: .2rem; flex: none; }
+.st-creds { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: .75rem;
+            white-space: pre-wrap; word-break: break-all; font-size: .95rem; text-align: left; }

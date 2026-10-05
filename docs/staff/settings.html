@@ -33,6 +33,7 @@
       <div class="toolbar chips-row">
         <button type="button" class="chip-btn" data-stab="shop" aria-pressed="true" data-i18n="set.tab_shop"></button>
         <button type="button" class="chip-btn" data-stab="delivery" aria-pressed="false" data-i18n="set.tab_delivery"></button>
+        <button type="button" class="chip-btn" data-stab="staff" aria-pressed="false" data-roles="ADMIN" data-i18n="set.tab_staff"></button>
       </div>
       <p class="alert alert-warn" id="set-readonly" data-i18n="set.readonly" hidden></p>
 
@@ -72,8 +73,47 @@
           <button type="button" class="btn btn-primary" id="za-go" data-i18n="set.zone_add_go"></button>
         </fieldset>
       </section>
+
+      <!-- ================= STAFF (ADMIN only; logins are managed by the Edge Function staff-admin) ================= -->
+      <section id="staff" hidden>
+        <p class="hint" data-i18n="st.intro"></p>
+        <div class="list" id="st-list"></div>
+        <fieldset id="st-add">
+          <legend data-i18n="st.add"></legend>
+          <div class="grid-2 stack-sm">
+            <div class="field"><label for="st-name" data-i18n="st.name"></label><input id="st-name" type="text" maxlength="60" autocomplete="off"></div>
+            <div class="field"><label for="st-email" data-i18n="st.email"></label><input id="st-email" type="email" dir="ltr" maxlength="200" autocomplete="off"></div>
+          </div>
+          <div class="field">
+            <span class="label-like" data-i18n="st.role"></span>
+            <div id="st-roles"></div>
+          </div>
+          <div class="field">
+            <label for="st-password" data-i18n="st.password"></label>
+            <div class="input-with-btn"><input id="st-password" type="text" dir="ltr" maxlength="72" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn btn-small" id="st-gen" data-i18n="st.generate"></button></div>
+            <p class="hint" data-i18n="st.password_hint"></p>
+          </div>
+          <div class="alert alert-error" id="st-error" role="alert" hidden></div>
+          <button type="button" class="btn btn-primary" id="st-create" data-i18n="st.create"></button>
+        </fieldset>
+      </section>
     </main>
   </div>
+
+  <!-- shown once after creating a login or resetting a password -->
+  <dialog class="sheet small" id="st-done" aria-labelledby="st-done-title">
+    <div class="sheet-head"><h2 id="st-done-title"></h2></div>
+    <div class="sheet-body">
+      <p id="st-done-text"></p>
+      <pre class="st-creds" id="st-creds" dir="ltr"></pre>
+      <p class="hint" data-i18n="st.done_hint"></p>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn" id="st-copy" data-i18n="st.copy"></button>
+      <button type="button" class="btn btn-primary" data-close data-i18n="common.close"></button>
+    </div>
+  </dialog>
   <script src="../js/settings.js"></script>
 </body>
 </html>

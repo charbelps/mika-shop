@@ -35,6 +35,8 @@
     tabs.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.stab === name)));
     $('#set-form').hidden = name !== 'shop';
     $('#zones').hidden = name !== 'delivery';
+    $('#staff').hidden = name !== 'staff';
+    if (name === 'staff' && canEdit && !staffLoaded) loadStaff();
     try { sessionStorage.setItem('settings:tab', name); } catch { /* ignore */ }
   }
   tabs.forEach((b) => b.addEventListener('click', () => showTab(b.dataset.stab)));
@@ -280,9 +282,138 @@
     if (z && !$('#za-gov-ar').value) $('#za-gov-ar').value = z.governorate_ar;
   });
 
+  // ================= STAFF (ADMIN only) =================
+  // Logins can only be created / changed with Supabase's secret key, so every action goes
+  // through the Edge Function staff-admin, which checks again that the caller is an ADMIN.
+  let staffLoaded = false;
+  let staffMe = null;
+  const ROLES = ['ADMIN', 'OWNER', 'DRIVER'];
+
+  async function staffCall(body) {
+    const { data, error } = await DB.client.functions.invoke('staff-admin', { body });
+    if (!error) return { data };
+    let code = '';
+    try { code = (await error.context.json()).error || ''; } catch { code = ''; }
+    return { error: code || 'SERVER_ERROR' };
+  }
+  const stErr = (code) => (t('st.err_' + code) !== 'st.err_' + code ? t('st.err_' + code) : t('common.error_generic') + ' (' + code + ')');
+
+  // 10 easy-to-read characters (no 0/O, 1/l/I), from the browser's secure random generator
+  function newPassword() {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const a = new Uint32Array(10);
+    crypto.getRandomValues(a);
+    return [...a].map((n) => chars[n % chars.length]).join('');
+  }
+
+  async function loadStaff() {
+    staffLoaded = true;
+    const box = $('#st-list');
+    box.innerHTML = `<p class="hint">${esc(t('common.loading'))}</p>`;
+    const { data, error } = await staffCall({ action: 'list' });
+    if (error) { box.innerHTML = `<div class="alert alert-error">${esc(stErr(error))}</div>`; staffLoaded = false; return; }
+    staffMe = data.me;
+    const when = (iso) => (iso ? new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : t('st.never'));
+    box.innerHTML = data.staff.length ? '' : `<p class="empty">${esc(t('st.none'))}</p>`;
+    data.staff.forEach((s) => {
+      const isMe = s.user_id === staffMe;
+      const row = document.createElement('div');
+      row.className = 'card st-row' + (s.active ? '' : ' off');
+      row.innerHTML = `
+        <div class="st-head">
+          <div class="st-who"><strong>${esc(s.name)}</strong> ${isMe ? `<span class="pill pill-ok">${esc(t('st.you'))}</span>` : ''}
+            <span class="pill">${esc(t('staff.role_' + s.role))}</span>${s.active ? '' : ` <span class="pill pill-off">${esc(t('st.inactive'))}</span>`}
+            <div class="hint" dir="ltr" style="text-align:start">${esc(s.email)}</div>
+            <div class="hint">${esc(t('st.last_login', { when: when(s.last_sign_in_at) }))}</div></div>
+        </div>
+        <div class="od-actions">
+          <button type="button" class="btn btn-small" data-act="edit">${esc(t('common.edit'))}</button>
+          <button type="button" class="btn btn-small" data-act="reset">${esc(t('st.reset'))}</button>
+          ${isMe ? '' : `<button type="button" class="btn btn-small ${s.active ? 'btn-danger' : ''}" data-act="active">${esc(t(s.active ? 'st.deactivate' : 'st.reactivate'))}</button>`}
+        </div>
+        <div class="st-edit" hidden>
+          <div class="grid-2 stack-sm">
+            <label>${esc(t('st.name'))}<input type="text" data-e="name" maxlength="60" value="${esc(s.name)}"></label>
+            <label>${esc(t('st.role'))}<select data-e="role" ${isMe ? 'disabled' : ''}>${ROLES.map((r) => `<option value="${r}" ${r === s.role ? 'selected' : ''}>${esc(t('staff.role_' + r))}</option>`).join('')}</select></label>
+          </div>
+          ${isMe ? `<p class="hint">${esc(t('st.own_role'))}</p>` : ''}
+          <button type="button" class="btn btn-primary btn-small" data-act="save">${esc(t('common.save'))}</button>
+        </div>`;
+      const act = async (body, okMsg) => {
+        row.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+        const { error } = await staffCall(body);
+        if (error) { toast(stErr(error), true); row.querySelectorAll('button').forEach((b) => { b.disabled = false; }); return false; }
+        if (okMsg) toast(okMsg);
+        await loadStaff();
+        return true;
+      };
+      row.querySelector('[data-act=edit]').addEventListener('click', () => { const e = $('.st-edit', row); e.hidden = !e.hidden; });
+      row.querySelector('[data-act=save]').addEventListener('click', () => {
+        const name = $('[data-e=name]', row).value.trim();
+        const role = $('[data-e=role]', row).value;
+        const body = { action: 'update', user_id: s.user_id };
+        if (name !== s.name) body.name = name;
+        if (!isMe && role !== s.role) body.role = role;
+        act(body, t('set.saved'));
+      });
+      row.querySelector('[data-act=reset]').addEventListener('click', async () => {
+        const pw = newPassword();
+        if (!confirm(t('st.reset_q', { name: s.name }))) return;
+        const ok = await act({ action: 'reset_password', user_id: s.user_id, password: pw });
+        if (ok) showCreds(t('st.reset_done', { name: s.name }), s.email, pw);
+      });
+      const a = row.querySelector('[data-act=active]');
+      if (a) a.addEventListener('click', () => {
+        if (s.active && !confirm(t('st.deactivate_q', { name: s.name }))) return;
+        act({ action: 'update', user_id: s.user_id, active: !s.active }, t(s.active ? 'st.deactivated' : 'st.reactivated', { name: s.name }));
+      });
+      box.appendChild(row);
+    });
+  }
+
+  $('#st-roles').innerHTML = ROLES.map((r, i) => `<label class="check st-role"><input type="radio" name="st-role" value="${r}" ${i === 1 ? 'checked' : ''}>
+    <span><strong>${esc(t('staff.role_' + r))}</strong><br><span class="hint">${esc(t('st.role_' + r))}</span></span></label>`).join('');
+  $('#st-password').value = newPassword();
+  $('#st-gen').addEventListener('click', () => { $('#st-password').value = newPassword(); });
+  $('#st-create').addEventListener('click', async () => {
+    const err = $('#st-error');
+    err.hidden = true;
+    const name = $('#st-name').value.trim();
+    const email = $('#st-email').value.trim();
+    const password = $('#st-password').value;
+    const role = (document.querySelector('[name=st-role]:checked') || {}).value;
+    if (!name) { err.textContent = stErr('BAD_NAME'); err.hidden = false; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = stErr('BAD_EMAIL'); err.hidden = false; return; }
+    if (password.length < 8) { err.textContent = stErr('BAD_PASSWORD'); err.hidden = false; return; }
+    const btn = $('#st-create');
+    btn.disabled = true;
+    const { error } = await staffCall({ action: 'create', name, email, role, password });
+    btn.disabled = false;
+    if (error) { err.textContent = stErr(error); err.hidden = false; return; }
+    showCreds(t('st.created', { name }), email.toLowerCase(), password);
+    $('#st-name').value = ''; $('#st-email').value = ''; $('#st-password').value = newPassword();
+    await loadStaff();
+  });
+
+  // shows the login details ONCE so Mika can send them to the person
+  const doneDlg = $('#st-done');
+  doneDlg.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => { doneDlg.close(); $('#st-creds').textContent = ''; }));
+  function showCreds(title, email, password) {
+    const login = new URL('login.html', location.href).href;
+    $('#st-done-title').textContent = title;
+    $('#st-done-text').textContent = t('st.send_these');
+    $('#st-creds').textContent = `${t('st.login_page')}: ${login}\n${t('st.email')}: ${email}\n${t('st.password')}: ${password}`;
+    doneDlg.showModal();
+  }
+  $('#st-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('#st-creds').textContent); toast(t('st.copied')); } catch { toast(t('common.error_generic'), true); }
+  });
+
   // ---------- start ----------
-  await Promise.all([loadSettings(), loadZones()]);
+  // pick the tab first, then load: a tab pressed while loading is never switched back
+  if (startTab === 'staff' && !canEdit) startTab = 'shop';
   showTab(startTab);
+  await Promise.all([loadSettings(), loadZones()]);
   updateZoneSave();
   window.Settings = { changes, zDirty, parseFee };
 })();
