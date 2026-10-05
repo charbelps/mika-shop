@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Orders</title>
   <link rel="stylesheet" href="../css/staff.css">
+  <link rel="stylesheet" href="../css/print.css" media="print">
   <script src="../js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
           integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
@@ -14,7 +15,6 @@
   <script src="../js/db.js"></script>
   <script src="../js/staff-auth.js"></script>
 </head>
-<!-- Placeholder: the real prep screen is Phase 1, step 9. -->
 <body class="auth-pending">
   <div class="app">
     <header class="topbar">
@@ -27,10 +27,52 @@
       <a href="prep.html" aria-current="page" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
     </nav>
     <main class="main">
-      <h1 data-i18n="staff.nav_orders"></h1>
-      <p class="empty" data-i18n="staff.not_built"></p>
+      <div class="toolbar">
+        <h1 style="flex:1;margin:0" data-i18n="staff.nav_orders"></h1>
+        <span class="pill" id="o-live"></span>
+      </div>
+      <div class="toolbar chips-row">
+        <button type="button" class="chip-btn" data-otab="todo" aria-pressed="true" data-i18n="prep.tab_todo"></button>
+        <button type="button" class="chip-btn" data-otab="awaiting" aria-pressed="false" data-i18n="prep.tab_awaiting"></button>
+        <button type="button" class="chip-btn" data-otab="packed" aria-pressed="false" data-i18n="prep.tab_packed"></button>
+        <button type="button" class="chip-btn" data-otab="all" aria-pressed="false" data-i18n="prep.tab_all"></button>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="o-search" data-i18n-placeholder="prep.search" autocomplete="off">
+      </div>
+      <p class="hint" id="o-count"></p>
+      <div class="list" id="o-list"></div>
+      <div class="pager" id="o-pager" hidden>
+        <button type="button" class="btn btn-small" id="o-prev" data-i18n="admin.prev"></button>
+        <span id="o-page"></span>
+        <button type="button" class="btn btn-small" id="o-next" data-i18n="admin.next"></button>
+      </div>
     </main>
   </div>
-  <script>StaffAuth.require(['ADMIN', 'OWNER']);</script>
+
+  <dialog class="sheet" id="order-dialog" aria-labelledby="od-title">
+    <div class="sheet-head">
+      <h2 id="od-title"></h2>
+      <button type="button" class="btn btn-ghost" data-close data-i18n="common.close"></button>
+    </div>
+    <div class="sheet-body" id="od-body"></div>
+  </dialog>
+
+  <dialog class="sheet small" id="cancel-dialog" aria-labelledby="cx-title">
+    <div class="sheet-head"><h2 id="cx-title"></h2></div>
+    <div class="sheet-body">
+      <p data-i18n="prep.cancel_help"></p>
+      <div class="alert alert-error" id="cx-error" role="alert" hidden></div>
+      <label for="cx-reason" data-i18n="prep.cancel_reason"></label>
+      <textarea id="cx-reason" maxlength="300"></textarea>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn" data-close data-i18n="prep.cancel_keep"></button>
+      <button type="button" class="btn btn-danger" id="cx-go" data-i18n="prep.cancel_go"></button>
+    </div>
+  </dialog>
+
+  <div id="slip" class="slip" aria-hidden="true"></div>
+  <script src="../js/prep.js"></script>
 </body>
 </html>

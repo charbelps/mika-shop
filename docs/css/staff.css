@@ -208,6 +208,24 @@ legend { font-weight: 600; padding: 0 .3rem; }
 }
 .toast.error { background: var(--danger); }
 
+/* ---------- prep screen (step 9) ---------- */
+.chips-row { gap: .4rem; }
+.chip-btn { min-height: 40px; padding: 0 .9rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+            font: inherit; cursor: pointer; }
+.chip-btn[aria-pressed=true] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 600; }
+.od-pills { display: flex; flex-wrap: wrap; gap: .3rem; margin-block-end: .25rem; }
+.od-name { font-weight: 600; font-size: 1.1rem; margin: 0; }
+.od-phone { margin: 0 0 .5rem; text-align: start; }
+.od-links { display: flex; flex-wrap: wrap; gap: .4rem; margin-block-end: .5rem; }
+.od-item { display: flex; justify-content: space-between; gap: .75rem; padding-block: .45rem; border-block-end: 1px solid var(--line); }
+.od-sum { display: flex; justify-content: space-between; padding-block: .25rem; }
+.od-sum.total { font-size: 1.1rem; border-block-start: 1px solid var(--line); margin-block-start: .3rem; padding-block-start: .5rem; }
+.od-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.od-actions .btn { flex: 1 1 140px; }
+.ok { color: var(--ok); }
+dialog.sheet.small { height: auto; max-width: 480px; }
+.slip { display: none; }
+
 /* tables (import preview) */
 .table-wrap { overflow-x: auto; background: var(--surface); border-radius: var(--radius); }
 table.data { border-collapse: collapse; width: 100%; font-size: .85rem; }
