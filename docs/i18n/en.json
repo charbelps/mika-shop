@@ -66,7 +66,7 @@
     "price": "Price",
     "compare_price": "Old price (optional, shown crossed out)",
     "photos": "Photos",
-    "photos_hint": "The first photo is the main one. Photos are made smaller automatically before upload.",
+    "photos_hint": "The first photo is the main one. Please use real photos of the actual item (not catalogue pictures) and add its measurements above. Photos are made smaller automatically before upload.",
     "add_photos": "Add photos",
     "make_main": "Make main photo",
     "remove_photo": "Remove photo",
@@ -116,7 +116,11 @@
     "err_permission": "You don't have permission to do this.",
     "err_photo": "Photo failed: {name}",
     "saved_product": "Product saved",
-    "saved_category": "Category saved"
+    "saved_category": "Category saved",
+    "measurements_en": "Measurements / size (English, optional)",
+    "measurements_ar": "Measurements / size (Arabic, optional)",
+    "search_keywords": "Search words (optional)",
+    "search_keywords_hint": "Other ways people may type it, e.g. Arabizi: tawle, kursi, sajjade. Customers never see these; they only help search."
   },
   "imp": {
     "csv_title": "Products from a spreadsheet (CSV)",
@@ -153,7 +157,8 @@
     "photo_summary": "{ok} of {total} photos added, {failed} failed",
     "photo_err_type": "not a photo file (jpg, png, webp)",
     "photo_err_nosku": "no product with this SKU",
-    "photo_err_upload": "upload failed, try again"
+    "photo_err_upload": "upload failed, try again",
+    "help_extra": "Optional columns: search_keywords (Arabizi / other spellings, e.g. \"tawle, kursi\"), measurements_en and measurements_ar."
   },
   "shop": {
     "default_name": "Shop",
@@ -191,7 +196,8 @@
     "wa_ask": "Hello! I have a question about: {name} (SKU {sku})\n{url}",
     "wa_hello": "Hello!",
     "photos": "Product photos",
-    "photo_n": "Photo {n}"
+    "photo_n": "Photo {n}",
+    "measurements": "Measurements"
   },
   "cart": {
     "title": "Your cart",

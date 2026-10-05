@@ -233,7 +233,7 @@
       if (ids) query = query.in('category_id', ids);
       if (q) {
         const s = q.replace(/[",()\\*%]/g, ' ').trim();
-        query = query.or(`name_en.ilike."*${s}*",name_ar.ilike."*${s}*"`);
+        query = query.or(`name_en.ilike."*${s}*",name_ar.ilike."*${s}*",search_keywords.ilike."*${s}*"`);
       }
       const { data, error, count } = await query;
       if (error) throw error;
@@ -259,7 +259,7 @@
     const sku = new URLSearchParams(location.search).get('sku') || '';
     const box = $('#product');
     const { data: p, error } = await DB.client.from('products')
-      .select('sku,name_en,name_ar,desc_en,desc_ar,price,compare_price,stock,has_variants,photos,category_id,variants(id,label_en,label_ar,price,stock,active,sort)')
+      .select('sku,name_en,name_ar,desc_en,desc_ar,measurements_en,measurements_ar,price,compare_price,stock,has_variants,photos,category_id,variants(id,label_en,label_ar,price,stock,active,sort)')
       .eq('sku', sku).eq('active', true).maybeSingle();
     if (error || !p) {
       setTitle(t('shop.not_found_product'));
@@ -297,6 +297,7 @@
           </div>
           <a class="btn btn-wa btn-block" id="pp-wa" target="_blank" rel="noopener" hidden>${esc(t('shop.ask_whatsapp'))}</a>
         </div>
+        ${I18n.pick(p, 'measurements') ? `<div class="measure"><span class="label">📏 ${esc(t('shop.measurements'))}</span><span dir="auto">${esc(I18n.pick(p, 'measurements'))}</span></div>` : ''}
         <div class="desc">${esc(I18n.pick(p, 'desc'))}</div>
         <p class="muted" style="font-size:.8rem" dir="ltr">SKU: ${esc(p.sku)}</p>
       </div>

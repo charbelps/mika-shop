@@ -182,7 +182,7 @@
       .order('updated_at', { ascending: false })
       .range(list.page * PAGE, list.page * PAGE + PAGE - 1);
     const s = list.q.replace(/[",()\\*%]/g, ' ').trim();
-    if (s) q = q.or(`name_en.ilike."*${s}*",name_ar.ilike."*${s}*",sku.ilike."*${s}*"`);
+    if (s) q = q.or(`name_en.ilike."*${s}*",name_ar.ilike."*${s}*",sku.ilike."*${s}*",search_keywords.ilike."*${s}*"`);
     if (list.cat) q = q.in('category_id', [...descendants(Number(list.cat))]);
     if (list.filter === 'ar_review') q = q.eq('ar_needs_review', true);
     if (list.filter === 'hidden') q = q.eq('active', false);
@@ -276,6 +276,9 @@
     $('#pd-name-ar').value = p ? p.name_ar : '';
     $('#pd-desc-en').value = p ? p.desc_en : '';
     $('#pd-desc-ar').value = p ? p.desc_ar : '';
+    $('#pd-meas-en').value = p ? p.measurements_en : '';
+    $('#pd-meas-ar').value = p ? p.measurements_ar : '';
+    $('#pd-keywords').value = p ? p.search_keywords : '';
     $('#pd-category').value = p && p.category_id ? p.category_id : '';
     $('#pd-price').value = p ? p.price : '';
     $('#pd-compare').value = p && p.compare_price != null ? p.compare_price : '';
@@ -422,6 +425,9 @@
       name_ar: $('#pd-name-ar').value.trim(),
       desc_en: $('#pd-desc-en').value,
       desc_ar: $('#pd-desc-ar').value,
+      measurements_en: $('#pd-meas-en').value.trim(),
+      measurements_ar: $('#pd-meas-ar').value.trim(),
+      search_keywords: $('#pd-keywords').value.trim(),
       category_id: $('#pd-category').value || null,
       price,
       compare_price: num($('#pd-compare').value),

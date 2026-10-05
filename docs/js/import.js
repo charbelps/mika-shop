@@ -7,8 +7,10 @@
   const t = (k, v) => I18n.t(k, v);
   const SKU_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
   const COLUMNS = ['sku', 'name_en', 'name_ar', 'desc_en', 'desc_ar', 'category', 'price', 'compare_price',
-    'stock', 'featured', 'active', 'variant_en', 'variant_ar', 'variant_price', 'variant_stock'];
-  const PRODUCT_FIELDS = ['name_en', 'name_ar', 'desc_en', 'desc_ar', 'category', 'price', 'compare_price', 'stock', 'featured', 'active'];
+    'stock', 'featured', 'active', 'search_keywords', 'measurements_en', 'measurements_ar',
+    'variant_en', 'variant_ar', 'variant_price', 'variant_stock'];
+  const PRODUCT_FIELDS = ['name_en', 'name_ar', 'desc_en', 'desc_ar', 'category', 'price', 'compare_price', 'stock', 'featured', 'active',
+    'search_keywords', 'measurements_en', 'measurements_ar'];
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -148,6 +150,7 @@
           <li>${esc(t('imp.help_columns'))}</li>
           <li>${esc(t('imp.help_translate'))} <code dir="ltr">=GOOGLETRANSLATE(B2,"en","ar")</code></li>
           <li>${esc(t('imp.help_variants'))}</li>
+          <li>${esc(t('imp.help_extra'))}</li>
           <li>${esc(t('imp.help_empty'))}</li>
         </ul>
         <p><a class="btn btn-small" href="../templates/import-template.csv" download>${esc(t('imp.download_template'))}</a></p>
@@ -184,7 +187,7 @@
 
   function renderPreview(box, fileName) {
     const a = current;
-    const cols = ['sku', 'name_en', 'name_ar', 'category', 'price', 'compare_price', 'stock', 'variant_en', 'variant_stock', 'featured', 'active'];
+    const cols = ['sku', 'name_en', 'name_ar', 'category', 'price', 'compare_price', 'stock', 'variant_en', 'variant_stock', 'featured', 'active', 'search_keywords', 'measurements_en'];
     const ok = !a.fileErrors.length && !a.badRows && a.products.length;
     box.innerHTML = `
       <h3 style="margin-top:1rem">${esc(fileName)}</h3>

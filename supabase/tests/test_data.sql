@@ -63,6 +63,12 @@ insert into public.products (sku, name_en, name_ar, desc_en, price, stock, activ
 values ('TEST-RACE-01', '[TEST] Race test item', '[تجربة] منتج اختبار السباق', 'Used by the automatic race test.', 3.00, 1, true)
 on conflict (sku) do nothing;
 
+-- F1 + F5 examples: Arabizi search words + measurements on two test products (only if still empty).
+update public.products set search_keywords = 'kubbaye, finjen, mug', measurements_en = '350 ml · 9 cm high', measurements_ar = '350 مل · ارتفاع 9 سم'
+  where sku = 'TEST-MUG-01' and search_keywords = '';
+update public.products set search_keywords = 'mi2laye, me2laye, tawa', measurements_en = '28 cm wide', measurements_ar = 'عرض 28 سم'
+  where sku = 'TEST-PAN-01' and search_keywords = '';
+
 select (select count(*) from public.products where sku like 'TEST-%') as test_products,
        (select count(*) from public.variants where sku like 'TEST-%') as test_variants,
        (select count(*) from public.categories where name_en like '[TEST]%') as test_categories;
