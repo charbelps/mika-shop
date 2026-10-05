@@ -203,6 +203,20 @@ input[dir=ltr] { text-align: start; }
 .check-line { display: flex; gap: .6rem; align-items: center; margin-block: .5rem 1rem; }
 .check-line input { width: 22px; height: 22px; min-height: 0; }
 
+/* ---------- track order (step 11) ---------- */
+.trk-status { font-size: 1.5rem; margin-block: .2rem .8rem; }
+.trk-steps { list-style: none; padding: 0; margin: 0 0 1rem; }
+.trk-steps li { position: relative; display: flex; align-items: center; gap: .7rem; padding-block: .45rem; color: var(--muted); }
+.trk-steps li:not(:last-child)::after { content: ''; position: absolute; inset-inline-start: 13px; inset-block-start: 36px;
+  width: 2px; height: calc(100% - 26px); background: var(--line); }
+.trk-steps .dot { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface);
+  display: grid; place-items: center; font-size: .85rem; font-weight: 700; }
+.trk-steps li.done { color: var(--text); }
+.trk-steps li.done .dot { background: var(--ok); border-color: var(--ok); color: #fff; }
+.trk-steps li.done::after { background: var(--ok); }
+.trk-steps li.now { color: var(--text); font-weight: 700; }
+.trk-steps li.now .dot { border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-soft); }
+
 /* ---------- order confirmation (step 7) ---------- */
 .ord-head { text-align: center; padding-block: 1rem 1.25rem; }
 .ord-check { width: 64px; height: 64px; margin: 0 auto .75rem; border-radius: 50%; background: var(--ok-soft); color: var(--ok);

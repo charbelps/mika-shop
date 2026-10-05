@@ -113,7 +113,7 @@
     const f = document.getElementById('site-footer');
     if (f) {
       f.className = 'site-footer';
-      f.innerHTML = `<div class="wrap"><p data-shop-name></p><p id="footer-wa"></p></div>`;
+      f.innerHTML = `<div class="wrap"><p data-shop-name></p><p><a href="track.html" data-i18n="trk.footer_link"></a></p><p id="footer-wa"></p></div>`;
     }
   }
   function updateCartCount() {

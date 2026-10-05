@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Track your order</title>
+  <link rel="stylesheet" href="css/shop.css">
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/db.js"></script>
+</head>
+<body>
+  <header id="site-header"></header>
+  <main class="wrap narrow">
+    <h1 data-i18n="trk.title"></h1>
+    <p class="muted" data-i18n="trk.help"></p>
+    <!-- onsubmit: never let the browser submit by itself (it would put the phone in the address bar);
+         checkout.js (initTrack) handles the button once the page is ready. -->
+    <form id="trk-form" class="co-box" novalidate onsubmit="return false">
+      <div class="field">
+        <label for="trk-no" data-i18n="trk.f_no"></label>
+        <input id="trk-no" name="no" type="text" dir="ltr" autocomplete="off" maxlength="30" placeholder="10001" required>
+      </div>
+      <div class="field">
+        <label for="trk-phone" data-i18n="co.f_phone"></label>
+        <input id="trk-phone" name="phone" type="tel" inputmode="tel" dir="ltr" autocomplete="tel" maxlength="25" placeholder="70 123 456" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" data-i18n="trk.go"></button>
+    </form>
+    <div id="trk-result" aria-live="polite"></div>
+  </main>
+  <footer id="site-footer"></footer>
+  <script src="js/cart.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/checkout.js"></script>
+  <script>Checkout.initTrack();</script>
+</body>
+</html>

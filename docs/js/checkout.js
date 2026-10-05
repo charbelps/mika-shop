@@ -300,8 +300,56 @@
         <div class="sum-row total"><span>${esc(t('co.total'))}</span><strong>${moneyHtml(o.total)}</strong></div>
       </section>
       <p>${esc(t('ord.next_steps'))}</p>` : `<p>${esc(t('ord.no_details'))}</p>`}
-      <div class="buy">${waBtn}<a class="btn btn-block" href="index.html">${esc(t('cart.continue'))}</a></div>`;
+      <div class="buy"><a class="btn btn-primary btn-block" href="track.html?no=${encodeURIComponent(no)}">${esc(t('trk.title'))}</a>${waBtn}<a class="btn btn-block" href="index.html">${esc(t('cart.continue'))}</a></div>`;
   }
 
-  window.Checkout = { initCart, initCheckout, initOrder, normalizePhone };
+  // ---------- track order page ----------
+  async function initTrack() {
+    await Shop.boot();
+    Shop.setTitle(t('trk.title'));
+    const form = $('#trk-form');
+    const out = $('#trk-result');
+    const params = new URLSearchParams(location.search);
+    if (params.get('no')) form.no.value = params.get('no');
+    const me = loadMe();
+    if (me.phone) form.phone.value = me.phone;
+
+    const STEPS = ['NEW', 'CONFIRMED', 'PACKED', 'ON_THE_WAY', 'DELIVERED'];
+    const stepOf = (s) => (s === 'OUT_FOR_DELIVERY' || s === 'WITH_COMPANY' ? 'ON_THE_WAY' : s);
+    const fmt = (iso) => new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB' : 'en-GB',
+      { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+
+    async function run() {
+      const no = form.no.value.trim();
+      const phone = normalizePhone(form.phone.value);
+      if (!no || !phone) {
+        out.innerHTML = `<div class="alert alert-error">${esc(t(!no ? 'trk.need_no' : 'co.phone_bad'))}</div>`;
+        return;
+      }
+      const btn = form.querySelector('button[type=submit]');
+      btn.disabled = true;
+      const { data, error } = await DB.client.rpc('track_order', { p_order_no: no, p_phone: phone });
+      btn.disabled = false;
+      if (error) { out.innerHTML = `<div class="alert alert-error">${esc(t('common.error_generic'))}</div>`; return; }
+      if (!data) { out.innerHTML = `<div class="alert alert-warn">${esc(t('trk.not_found'))}</div>`; return; }
+      const cur = stepOf(data.status);
+      const special = ['CANCELLED', 'RETURNED', 'FAILED_ATTEMPT'].includes(data.status);
+      const idx = STEPS.indexOf(cur);
+      const wa = Shop.waLink(t('ord.wa_msg', { no: data.order_no }));
+      out.innerHTML = `<section class="co-box trk-card">
+          <p class="muted">${esc(t('ord.your_number'))} <strong dir="ltr">${esc(data.order_no)}</strong></p>
+          <h2 class="trk-status">${esc(t('status.' + data.status))}</h2>
+          ${special ? `<div class="alert alert-warn">${esc(t('trk.note_' + data.status))}</div>` : `
+          <ol class="trk-steps">${STEPS.map((s, i) => `<li class="${i < idx ? 'done' : i === idx ? 'now' : ''}">
+            <span class="dot" aria-hidden="true">${i < idx ? '✓' : ''}</span>
+            <span>${esc(s === 'ON_THE_WAY' ? t('trk.on_the_way') : t('status.' + s))}</span></li>`).join('')}</ol>`}
+          <p class="muted">${esc(t('trk.placed', { date: fmt(data.created_at) }))}<br>${esc(t('trk.updated', { date: fmt(data.updated_at) }))}</p>
+          ${wa ? `<a class="btn btn-wa btn-block" href="${esc(wa)}" target="_blank" rel="noopener">${esc(t('ord.contact_whatsapp'))}</a>` : ''}
+        </section>`;
+    }
+    form.addEventListener('submit', (e) => { e.preventDefault(); run(); });
+    if (form.no.value && form.phone.value) run();
+  }
+
+  window.Checkout = { initCart, initCheckout, initOrder, initTrack, normalizePhone };
 })();

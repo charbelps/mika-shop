@@ -343,5 +343,20 @@
     "slip_collect": "COLLECT / تحصيل",
     "slip_paid": "PAID — don't collect / مدفوع — لا تحصّل",
     "slip_delivery": "Delivery / التوصيل"
+  },
+  "trk": {
+    "title": "Track your order",
+    "help": "Enter your order number and the phone number you used when ordering.",
+    "f_no": "Order number",
+    "go": "Track",
+    "need_no": "Enter your order number.",
+    "not_found": "We couldn't find this order. Check the order number and the phone number.",
+    "on_the_way": "On the way",
+    "placed": "Ordered on {date}",
+    "updated": "Last update: {date}",
+    "note_CANCELLED": "This order was cancelled. For any question, contact us on WhatsApp.",
+    "note_RETURNED": "This order was returned. For any question, contact us on WhatsApp.",
+    "note_FAILED_ATTEMPT": "We couldn't deliver your order. We'll contact you to arrange a new time.",
+    "footer_link": "Track my order"
   }
 }

@@ -19,7 +19,9 @@
     <h1 data-i18n="co.title"></h1>
     <div id="co-notes"></div>
 
-    <form id="co-form" novalidate autocomplete="on">
+    <!-- onsubmit: never let the browser submit by itself (it would put the customer's details in the
+         address bar if pressed before the page is ready); checkout.js handles the button. -->
+    <form id="co-form" novalidate autocomplete="on" onsubmit="return false">
       <section class="co-box">
         <h2 data-i18n="co.your_details"></h2>
         <div class="field">

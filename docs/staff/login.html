@@ -25,7 +25,9 @@
 
       <div id="login-error" class="alert alert-error" role="alert" hidden></div>
 
-      <form id="login-form" novalidate>
+      <!-- onsubmit: never let the browser submit by itself (it would put the email and password in
+           the address bar if pressed before the page is ready); staff-auth.js handles the button. -->
+      <form id="login-form" novalidate onsubmit="return false">
         <div class="field">
           <label for="email" data-i18n="staff.email"></label>
           <input id="email" name="email" type="email" autocomplete="username" dir="ltr" required>
