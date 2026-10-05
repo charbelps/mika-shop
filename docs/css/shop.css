@@ -150,6 +150,8 @@ main { padding-block: 1rem 3rem; min-height: 60vh; }
 .buy { display: flex; flex-direction: column; gap: .6rem; margin-block: 1rem; }
 .buy-row { display: flex; gap: .6rem; }
 .buy-row .btn-primary { flex: 1; }
+.share-row { display: flex; gap: .6rem; }
+.share-row .btn { flex: 1; }
 .desc { white-space: pre-line; margin-block-start: 1rem; }
 .measure { margin-block-start: 1rem; padding: .7rem .9rem; border-radius: var(--radius); background: var(--brand-soft); }
 .measure .label { margin-block-end: .15rem; }

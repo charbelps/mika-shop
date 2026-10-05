@@ -197,7 +197,10 @@
     "wa_hello": "مرحباً!",
     "photos": "صور المنتج",
     "photo_n": "صورة {n}",
-    "measurements": "القياسات"
+    "measurements": "القياسات",
+    "share_whatsapp": "شارك عبر واتساب",
+    "share": "مشاركة…",
+    "share_text": "شوف هيدا: {name}"
   },
   "cart": {
     "title": "سلّتك",

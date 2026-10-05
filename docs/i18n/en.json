@@ -197,7 +197,10 @@
     "wa_hello": "Hello!",
     "photos": "Product photos",
     "photo_n": "Photo {n}",
-    "measurements": "Measurements"
+    "measurements": "Measurements",
+    "share_whatsapp": "Share on WhatsApp",
+    "share": "Share…",
+    "share_text": "Look at this: {name}"
   },
   "cart": {
     "title": "Your cart",

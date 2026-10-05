@@ -296,6 +296,10 @@
             <button type="button" class="btn btn-primary" id="pp-add">${esc(t('shop.add_to_cart'))}</button>
           </div>
           <a class="btn btn-wa btn-block" id="pp-wa" target="_blank" rel="noopener" hidden>${esc(t('shop.ask_whatsapp'))}</a>
+          <div class="share-row">
+            <a class="btn" id="pp-share-wa" target="_blank" rel="noopener">${esc(t('shop.share_whatsapp'))}</a>
+            <button type="button" class="btn" id="pp-share" hidden>↗ ${esc(t('shop.share'))}</button>
+          </div>
         </div>
         ${I18n.pick(p, 'measurements') ? `<div class="measure"><span class="label">📏 ${esc(t('shop.measurements'))}</span><span dir="auto">${esc(I18n.pick(p, 'measurements'))}</span></div>` : ''}
         <div class="desc">${esc(I18n.pick(p, 'desc'))}</div>
@@ -371,6 +375,22 @@
 
     const wa = waLink(t('shop.wa_ask', { name, sku: p.sku, url: location.href }));
     if (wa) { const a = $('#pp-wa'); a.href = wa; a.hidden = false; }
+
+    // Share: WhatsApp link (customer picks the contact) + the phone's own share menu when it has one.
+    const shareUrl = `${location.origin}${location.pathname}?sku=${encodeURIComponent(p.sku)}`;
+    const shareText = t('shop.share_text', { name });
+    $('#pp-share-wa').href = `https://wa.me/?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`;
+    if (navigator.share) {
+      const btn = $('#pp-share');
+      btn.hidden = false;
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.share({ title: name, text: shareText, url: shareUrl });
+        } catch (ex) {
+          if (ex && ex.name !== 'AbortError') window.open($('#pp-share-wa').href, '_blank', 'noopener');
+        }
+      });
+    }
   }
 
   let toastTimer;
