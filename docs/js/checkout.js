@@ -258,5 +258,50 @@
     });
   }
 
-  window.Checkout = { initCart, initCheckout, normalizePhone };
+  // ---------- confirmation page ----------
+  async function initOrder() {
+    await Shop.boot();
+    const no = new URLSearchParams(location.search).get('no') || '';
+    Shop.setTitle(t('ord.title'));
+    let o = null;
+    try { o = JSON.parse(sessionStorage.getItem('lastOrder')); } catch { o = null; }
+    if (o && o.order_no !== no) o = null;
+    const box = $('#order');
+    const wa = Shop.waLink(t('ord.wa_msg', { no }));
+    const waBtn = wa ? `<a class="btn btn-wa btn-block" href="${esc(wa)}" target="_blank" rel="noopener">${esc(t('ord.contact_whatsapp'))}</a>` : '';
+    if (!no) { location.replace('index.html'); return; }
+
+    let pay = '';
+    if (o) {
+      const hours = o.unpaid_cancel_hours ? ' ' + t('co.pay_within', { hours: o.unpaid_cancel_hours }) : '';
+      if (o.payment_method === 'COD') pay = `<p>${esc(t('ord.pay_cod', { total: Shop.money(o.total) }))}</p>`;
+      if (o.payment_method === 'WHISH') pay = `<p>${esc(t('ord.pay_whish', { total: Shop.money(o.total), number: o.whish_number || '', no }))}${esc(hours)}</p>`;
+      if (o.payment_method === 'OMT') pay = `<p>${esc(t('ord.pay_omt', { total: Shop.money(o.total), no }))}</p><p class="pay-info" dir="auto">${esc(o.omt_details || '')}</p><p>${esc(hours.trim())}</p>`;
+    }
+    const itemName = (i) => (I18n.lang === 'ar' && i.name_ar ? i.name_ar : i.name_en) + ((I18n.lang === 'ar' && i.label_ar) || i.label ? ' · ' + ((I18n.lang === 'ar' && i.label_ar) || i.label) : '');
+    box.innerHTML = `
+      <div class="ord-head">
+        <div class="ord-check" aria-hidden="true">✓</div>
+        <h1>${esc(t('ord.thanks'))}</h1>
+        <p class="muted">${esc(t('ord.your_number'))}</p>
+        <div class="ord-no" dir="ltr">${esc(no)}</div>
+        <p class="muted">${esc(t('ord.keep_number'))}</p>
+      </div>
+      ${o ? `
+      <section class="co-box">
+        <h2>${esc(t('ord.payment'))}</h2>
+        ${pay}
+      </section>
+      <section class="co-box">
+        <h2>${esc(t('co.summary'))}</h2>
+        ${(o.items || []).map((i) => `<div class="sum-row"><span>${i.qty} × ${esc(itemName(i))}</span><span>${moneyHtml(i.line_total)}</span></div>`).join('')}
+        <div class="sum-row sep"><span>${esc(t('cart.subtotal'))}</span><span>${moneyHtml(o.subtotal)}</span></div>
+        <div class="sum-row"><span>${esc(t('co.delivery'))}${o.eta_days ? ` <span class="muted">(${esc(t('co.eta', { days: o.eta_days }))})</span>` : ''}</span><span>${Number(o.delivery_fee) === 0 ? esc(t('co.free')) : moneyHtml(o.delivery_fee)}</span></div>
+        <div class="sum-row total"><span>${esc(t('co.total'))}</span><strong>${moneyHtml(o.total)}</strong></div>
+      </section>
+      <p>${esc(t('ord.next_steps'))}</p>` : `<p>${esc(t('ord.no_details'))}</p>`}
+      <div class="buy">${waBtn}<a class="btn btn-block" href="index.html">${esc(t('cart.continue'))}</a></div>`;
+  }
+
+  window.Checkout = { initCart, initCheckout, initOrder, normalizePhone };
 })();

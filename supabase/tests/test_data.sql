@@ -52,6 +52,17 @@ select v.* from (values
 ) v(sku, label_en, label_ar, price, stock, sort)
 where not exists (select 1 from public.variants x where x.sku = v.sku and x.label_en = v.label_en);
 
+-- A test delivery area with a TEST fee (real districts have no fee yet, so no order could be placed).
+-- Shows in the checkout dropdown of the TEST site only, clearly marked.
+insert into public.delivery_zones (governorate, governorate_ar, district, district_ar, fee, eta_days, sort)
+values ('[TEST] Zone', '[تجربة] منطقة', '[TEST] District', '[تجربة] قضاء', 2.50, '1-2', 9999)
+on conflict (governorate, district) do nothing;
+
+-- Stock 1, used by the automatic "two buyers, one item" race test (TEST-LAST-01 is kept for Charbel's).
+insert into public.products (sku, name_en, name_ar, desc_en, price, stock, active)
+values ('TEST-RACE-01', '[TEST] Race test item', '[تجربة] منتج اختبار السباق', 'Used by the automatic race test.', 3.00, 1, true)
+on conflict (sku) do nothing;
+
 select (select count(*) from public.products where sku like 'TEST-%') as test_products,
        (select count(*) from public.variants where sku like 'TEST-%') as test_variants,
        (select count(*) from public.categories where name_en like '[TEST]%') as test_categories;

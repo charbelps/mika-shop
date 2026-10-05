@@ -60,6 +60,12 @@ insert into public.order_items (order_id, sku, name_en, qty, unit_price, line_to
 select id, 'RLSTEST', 'RLSTEST item', 1, 10, 10 from public.orders where order_no like 'RLSTEST-%';
 insert into public.categories (name_en, active) values ('RLSTEST hidden category', false);
 
+-- Expected counts that depend on the data currently in the database (computed as postgres).
+create temp table _exp as
+select (select count(*) from public.delivery_zones where active) as zones,
+       (select count(*) from public.stock_log) as stock_log;
+grant select on _exp to anon, authenticated;
+
 -- ---------- logged out (anon) ----------------------------------------
 set local role anon;
 select set_config('request.jwt.claims', pg_temp.claims(null), true);
@@ -70,7 +76,7 @@ select pg_temp.try('anon', 'read staff',           'select 1 from public.staff',
 select pg_temp.try('anon', 'read stock_log',       'select 1 from public.stock_log',   'error:42501');
 select pg_temp.try('anon', 'read private setting', $q$select 1 from public.settings where key = 'order_prefix'$q$, 'rows:0');
 select pg_temp.try('anon', 'read public setting',  $q$select 1 from public.settings where key = 'currency'$q$,     'rows:1');
-select pg_temp.try('anon', 'read zones',           'select 1 from public.delivery_zones', 'rows:26');
+select pg_temp.try('anon', 'read all active zones', 'select 1 from public.delivery_zones', 'rows:' || (select zones from _exp));
 select pg_temp.try('anon', 'read hidden category', $q$select 1 from public.categories where name_en like 'RLSTEST%'$q$, 'rows:0');
 select pg_temp.try('anon', 'insert product',       $q$insert into public.products (sku, name_en, price) values ('RLSTEST-X', 'x', 1)$q$, 'error:42501');
 select pg_temp.try('anon', 'update setting',       $q$update public.settings set value = 'x' where key = 'currency'$q$, 'error:42501');
@@ -118,7 +124,7 @@ select set_config('request.jwt.claims', pg_temp.claims('00000000-0000-4000-8000-
 select pg_temp.try('owner', 'read all orders',      $q$select 1 from public.orders where order_no like 'RLSTEST-%'$q$, 'rows:2');
 select pg_temp.try('owner', 'read order items',     $q$select 1 from public.order_items where sku = 'RLSTEST'$q$, 'rows:2');
 select pg_temp.try('owner', 'read customers',       $q$select 1 from public.customers where phone = '+96170000001'$q$, 'rows:1');
-select pg_temp.try('owner', 'read stock_log',       'select 1 from public.stock_log', 'rows:0');
+select pg_temp.try('owner', 'read all stock_log',   'select 1 from public.stock_log', 'rows:' || (select stock_log from _exp));
 select pg_temp.try('owner', 'read private setting', $q$select 1 from public.settings where key = 'order_prefix'$q$, 'rows:1');
 select pg_temp.try('owner', 'insert category',      $q$insert into public.categories (name_en) values ('RLSTEST x')$q$, 'error:42501');
 select pg_temp.try('owner', 'update order',         $q$update public.orders set notes = 'x' where order_no like 'RLSTEST-%'$q$, 'rows:0');

@@ -17,4 +17,5 @@ delete from public.variants    where sku like 'TEST-%';
 delete from public.products    where sku like 'TEST-%';
 delete from public.categories  where name_en like '[TEST]%' and parent_id is not null;
 delete from public.categories  where name_en like '[TEST]%';
+delete from public.delivery_zones where governorate like '[TEST]%';
 commit;

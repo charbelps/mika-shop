@@ -255,5 +255,19 @@
     "err_TOO_MANY_ITEMS": "That's a lot of items! Please contact us on WhatsApp for big orders.",
     "err_INVALID_INPUT": "Some details are missing or too long. Please check the form.",
     "err_PAYMENT_NOT_AVAILABLE": "This payment method isn't available right now. Please choose another one."
+  },
+  "ord": {
+    "title": "Order received",
+    "thanks": "Thank you! Your order is received.",
+    "your_number": "Your order number",
+    "keep_number": "Keep this number: you'll need it to follow your order.",
+    "payment": "Payment",
+    "pay_cod": "Pay {total} in cash when you receive your order.",
+    "pay_whish": "Please send {total} by Whish to {number}, and write your order number {no} in the note.",
+    "pay_omt": "Please send {total} by OMT, with your order number {no}:",
+    "next_steps": "We'll contact you on WhatsApp if we need anything. Thank you for shopping with us!",
+    "no_details": "We received your order. For any question, contact us with your order number.",
+    "contact_whatsapp": "Contact us on WhatsApp",
+    "wa_msg": "Hello! About my order {no}:"
   }
 }
