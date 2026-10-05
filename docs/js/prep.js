@@ -38,6 +38,8 @@
   }
   // Orders Mika entered herself (F7); website orders get no pill.
   const srcPill = (o) => (o.source && o.source !== 'WEBSITE' ? ` <span class="pill">${esc(t('prep.src_' + o.source))}</span>` : '');
+  // First order from this phone number (advice #2): Mika can check it before packing.
+  const newPill = (o) => (o.is_first_order ? ` <span class="pill pill-warn" title="${esc(t('prep.new_customer_hint'))}">${esc(t('prep.new_customer'))}</span>` : '');
   function statusPill(s) {
     const cls = s === 'CANCELLED' || s === 'RETURNED' ? 'pill-off' : s === 'NEW' ? 'pill-danger' : s === 'PACKED' ? 'pill-ok' : '';
     return `<span class="pill ${cls}">${esc(t('status.' + s))}</span>`;
@@ -47,7 +49,7 @@
   async function load() {
     const reqId = ++state.req;
     let q = DB.client.from('orders')
-      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source', { count: 'exact' })
+      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source,is_first_order', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(state.page * PAGE, state.page * PAGE + PAGE - 1);
     if (state.tab === 'todo') q = q.in('status', ['NEW', 'CONFIRMED']);
@@ -80,7 +82,7 @@
       b.innerHTML = `<div class="body">
           <div class="title"><span dir="ltr">${esc(o.order_no)}</span> · ${esc(o.name)}</div>
           <div class="meta">${esc(when(o.created_at))} · ${esc(o.district)}</div>
-          <div>${statusPill(o.status)} ${payPill(o)}${srcPill(o)}</div>
+          <div>${statusPill(o.status)} ${payPill(o)}${srcPill(o)}${newPill(o)}</div>
         </div>
         <div class="end"><strong>${money(o.total)}</strong></div>`;
       b.addEventListener('click', () => open(o.id));
@@ -118,8 +120,9 @@
     const awaiting = o.payment_status === 'AWAITING' && !['CANCELLED', 'RETURNED'].includes(o.status);
     const done = ['CANCELLED', 'RETURNED'].includes(o.status);
     $('#od-body').innerHTML = `
-      <div class="od-pills">${statusPill(o.status)} ${payPill(o)}${srcPill(o)} ${canEdit ? '' : `<span class="pill">${esc(t('prep.readonly'))}</span>`}</div>
+      <div class="od-pills">${statusPill(o.status)} ${payPill(o)}${srcPill(o)}${newPill(o)} ${canEdit ? '' : `<span class="pill">${esc(t('prep.readonly'))}</span>`}</div>
       <p class="meta">${esc(when(o.created_at))}</p>
+      ${o.is_first_order ? `<p class="hint">${esc(t('prep.new_customer_hint'))}</p>` : ''}
       ${o.cancel_reason ? `<div class="alert alert-warn">${esc(t('prep.cancelled_because', { reason: o.cancel_reason }))}</div>` : ''}
 
       <fieldset><legend>${esc(t('prep.customer'))}</legend>

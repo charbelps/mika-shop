@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Settings</title>
+  <link rel="stylesheet" href="../css/staff.css">
+  <script src="../js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/staff-auth.js"></script>
+</head>
+<body class="auth-pending">
+  <div class="app">
+    <header class="topbar">
+      <div class="who"><strong data-staff-name></strong><small data-staff-role></small></div>
+      <button type="button" class="btn btn-ghost btn-small" data-lang-toggle data-i18n="common.lang_toggle"></button>
+      <button type="button" class="btn btn-small" data-sign-out data-i18n="staff.sign_out"></button>
+    </header>
+    <nav class="nav">
+      <a href="admin.html" data-roles="ADMIN"><span class="ico" aria-hidden="true">📦</span><span data-i18n="staff.nav_products"></span></a>
+      <a href="prep.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
+      <a href="settings.html" aria-current="page" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">⚙️</span><span data-i18n="staff.nav_settings"></span></a>
+    </nav>
+    <main class="main">
+      <div class="toolbar">
+        <h1 style="flex:1;margin:0" data-i18n="staff.nav_settings"></h1>
+      </div>
+      <div class="toolbar chips-row">
+        <button type="button" class="chip-btn" data-stab="shop" aria-pressed="true" data-i18n="set.tab_shop"></button>
+        <button type="button" class="chip-btn" data-stab="delivery" aria-pressed="false" data-i18n="set.tab_delivery"></button>
+      </div>
+      <p class="alert alert-warn" id="set-readonly" data-i18n="set.readonly" hidden></p>
+
+      <!-- ================= SHOP SETTINGS ================= -->
+      <!-- onsubmit: never let the browser submit by itself; settings.js handles the button. -->
+      <form id="set-form" novalidate autocomplete="off" onsubmit="return false">
+        <div id="set-groups"></div>
+        <div class="alert alert-error" id="set-error" role="alert" hidden></div>
+        <div class="set-save">
+          <button type="submit" class="btn btn-primary btn-block" id="set-save" data-i18n="set.save"></button>
+        </div>
+      </form>
+
+      <!-- ================= DELIVERY AREAS ================= -->
+      <section id="zones" hidden>
+        <p class="hint" data-i18n="set.zones_intro"></p>
+        <div class="toolbar">
+          <input type="search" id="z-search" data-i18n-placeholder="set.zones_search" autocomplete="off">
+          <select id="z-filter" aria-label="Filter">
+            <option value="" data-i18n="set.zones_all"></option>
+            <option value="nofee" data-i18n="set.zones_nofee"></option>
+            <option value="off" data-i18n="set.zones_off"></option>
+          </select>
+        </div>
+        <p class="hint" id="z-count"></p>
+        <div id="z-list"></div>
+        <fieldset id="z-add-box">
+          <legend data-i18n="set.zone_add"></legend>
+          <div class="grid-2 stack-sm">
+            <div class="field"><label for="za-gov" data-i18n="set.zone_gov"></label><input id="za-gov" type="text" list="za-govs" maxlength="60"><datalist id="za-govs"></datalist></div>
+            <div class="field"><label for="za-gov-ar" data-i18n="set.zone_gov_ar"></label><input id="za-gov-ar" type="text" dir="rtl" lang="ar" maxlength="60"></div>
+            <div class="field"><label for="za-dis" data-i18n="set.zone_dis"></label><input id="za-dis" type="text" maxlength="60"></div>
+            <div class="field"><label for="za-dis-ar" data-i18n="set.zone_dis_ar"></label><input id="za-dis-ar" type="text" dir="rtl" lang="ar" maxlength="60"></div>
+          </div>
+          <p class="hint" data-i18n="set.zone_add_hint"></p>
+          <div class="alert alert-error" id="za-error" role="alert" hidden></div>
+          <button type="button" class="btn btn-primary" id="za-go" data-i18n="set.zone_add_go"></button>
+        </fieldset>
+      </section>
+    </main>
+  </div>
+  <script src="../js/settings.js"></script>
+</body>
+</html>

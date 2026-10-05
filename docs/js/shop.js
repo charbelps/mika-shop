@@ -89,9 +89,9 @@
     const digits = String(S.whatsapp_number || '').replace(/\D/g, '');
     return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : '';
   }
-  // "Call us" link (F7): only once the shop's phone_number setting is filled.
+  // "Call us" link (F7): calls the shop's WhatsApp number (12b #32); hidden while it is empty.
   function telLink() {
-    const raw = String(S.phone_number || '').trim();
+    const raw = String(S.whatsapp_number || '').trim();
     if (!raw) return '';
     return 'tel:' + (DB.normalizePhone(raw) || raw.replace(/[^\d+]/g, ''));
   }
@@ -119,7 +119,7 @@
     const f = document.getElementById('site-footer');
     if (f) {
       f.className = 'site-footer';
-      f.innerHTML = `<div class="wrap"><p data-shop-name></p><p><a href="track.html" data-i18n="trk.footer_link"></a></p><p id="footer-wa"></p><p id="footer-call"></p></div>`;
+      f.innerHTML = `<div class="wrap"><p data-shop-name></p><p><a href="track.html" data-i18n="trk.footer_link"></a></p><p id="footer-wa"></p><p id="footer-call"></p><p><a href="privacy.html" data-i18n="shop.privacy"></a></p></div>`;
     }
   }
   function updateCartCount() {
@@ -404,6 +404,16 @@
     }
   }
 
+  // Privacy page: Mika's text from settings (privacy_en / privacy_ar), or the standard text.
+  async function initPrivacy() {
+    await boot();
+    setTitle(t('shop.privacy_title'));
+    const own = String(S['privacy_' + I18n.lang] || S.privacy_en || '').trim();
+    const text = own || t('shop.privacy_default');
+    $('#privacy').innerHTML = `<h1>${esc(t('shop.privacy_title'))}</h1>`
+      + text.split(/\n\s*\n/).map((p) => `<p dir="auto">${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
+  }
+
   let toastTimer;
   function toast(msg, href, linkText, isError) {
     let el = $('.toast');
@@ -416,7 +426,7 @@
   }
 
   window.Shop = {
-    boot, initHome, initCategory, initProduct, toast, esc, money,
+    boot, initHome, initCategory, initProduct, initPrivacy, toast, esc, money,
     settings: () => S, shopName, setTitle, photoImg, waLink, telLink, allCategories,
   };
 })();

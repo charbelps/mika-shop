@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy</title>
+  <link rel="stylesheet" href="css/shop.css">
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/db.js"></script>
+</head>
+<body>
+  <header id="site-header"></header>
+  <!-- text comes from settings privacy_en / privacy_ar (editable in the admin), or the standard text -->
+  <main class="wrap narrow prose" id="privacy"></main>
+  <footer id="site-footer"></footer>
+  <script src="js/cart.js"></script>
+  <script src="js/shop.js"></script>
+  <script>Shop.initPrivacy();</script>
+</body>
+</html>

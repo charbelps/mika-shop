@@ -32,9 +32,9 @@ set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 select pg_temp.try('right number + phone -> status',
   $q$select public.track_order((select v from pg_temp._v where k = 'no'), '76 123 456') ->> 'status'$q$, 'PACKED');
-select pg_temp.try('returns ONLY order_no, status, created_at, updated_at',
+select pg_temp.try('returns ONLY order_no, status, dates, payment_received (added 6 Oct)',
   $q$select string_agg(k, ',' order by k) from jsonb_object_keys(public.track_order((select v from pg_temp._v where k = 'no'), '+96176123456')) k$q$,
-  'created_at,order_no,status,updated_at');
+  'created_at,order_no,payment_received,status,updated_at');
 select pg_temp.try('phone in another format (00961, dashes)',
   $q$select public.track_order((select v from pg_temp._v where k = 'no'), '00961-76-123456') ->> 'status'$q$, 'PACKED');
 select pg_temp.try('order number lower-case + spaces',

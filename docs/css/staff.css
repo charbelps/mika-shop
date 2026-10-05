@@ -264,3 +264,25 @@ input[aria-invalid=true], select[aria-invalid=true] { border-color: var(--danger
   .no-cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: start; }
   .no-side { position: sticky; top: 72px; }
 }
+
+/* ---------- settings screen (Phase 1c) ---------- */
+.set-save { position: sticky; bottom: calc(var(--nav-h) + 8px); padding-block: .5rem; }
+@media (min-width: 900px) { .set-save { bottom: 8px; } }
+.z-gov { padding-block-end: .25rem; }
+.z-bulk { margin-block-end: .5rem; max-width: 340px; }
+.z-bulk .hint { margin: 0 0 .2rem; }
+.z-row { border-block-start: 1px solid var(--line); padding-block: .6rem; }
+.z-row.off { opacity: .7; }
+.z-row.dirty { background: var(--warn-soft); margin-inline: -.75rem; padding-inline: .75rem; }
+.z-name { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-block-end: .4rem; }
+.z-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; align-items: end; }
+.z-fields label, .z-names label { font-size: .85rem; font-weight: 500; margin: 0; }
+.z-fields .check { font-size: .95rem; }
+@media (min-width: 700px) { .z-fields { grid-template-columns: 110px 110px 200px auto; justify-content: start; gap: .75rem; } }
+.z-names summary { cursor: pointer; color: var(--muted); font-size: .85rem; margin-block-start: .3rem; }
+.z-savebar {
+  position: fixed; inset-inline: 0; inset-block-end: var(--nav-h); z-index: 25; display: flex; gap: .5rem;
+  padding: .6rem 1rem; background: var(--surface); border-block-start: 1px solid var(--line); box-shadow: 0 -2px 10px rgba(0,0,0,.06);
+}
+.z-savebar .btn-primary { flex: 1; }
+@media (min-width: 900px) { .z-savebar { inset-block-end: 0; inset-inline-start: 220px; } }

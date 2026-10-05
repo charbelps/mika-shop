@@ -323,6 +323,7 @@
       out.innerHTML = `<section class="co-box trk-card">
           <p class="muted">${esc(t('ord.your_number'))} <strong dir="ltr">${esc(data.order_no)}</strong></p>
           <h2 class="trk-status">${esc(t('status.' + data.status))}</h2>
+          ${data.payment_received ? `<p class="trk-paid">${esc(t('trk.payment_received'))}</p>` : ''}
           ${special ? `<div class="alert alert-warn">${esc(t('trk.note_' + data.status))}</div>` : `
           <ol class="trk-steps">${STEPS.map((s, i) => `<li class="${i < idx ? 'done' : i === idx ? 'now' : ''}">
             <span class="dot" aria-hidden="true">${i < idx ? '✓' : ''}</span>

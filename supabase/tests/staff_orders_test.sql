@@ -1,5 +1,6 @@
 -- =====================================================================
--- Mika Shop: staff orders test (F7: staff_place_order, orders.source, phone_number). ROLLED BACK.
+-- Mika Shop: staff orders test (F7: staff_place_order, orders.source). ROLLED BACK.
+-- (The phone_number setting was removed on 6 Oct: Call us uses the WhatsApp number.)
 -- Needs the test data (supabase/tests/test_data.sql).
 -- Run:  supabase db query --linked -f supabase/tests/staff_orders_test.sql
 -- =====================================================================
@@ -59,11 +60,11 @@ select pg_temp.try('orders.source: default WEBSITE, 4 allowed values',
   $q$select (select column_default from information_schema.columns where table_schema = 'public' and table_name = 'orders' and column_name = 'source')
      || ' ' || (select pg_get_constraintdef(oid) ~ 'WEBSITE.*PHONE.*INSTAGRAM.*WHATSAPP' from pg_constraint where conname = 'orders_source_check')::text$q$,
   '''WEBSITE''::text true');
-select pg_temp.try('setting phone_number exists, public', $q$select is_public::text from public.settings where key = 'phone_number'$q$, 'true');
+select pg_temp.try('setting phone_number gone (Call us = WhatsApp number)', $q$select count(*)::text from public.settings where key = 'phone_number'$q$, '0');
 
 -- ---------- visitor ----------
 set local role anon; select pg_temp.as_user(null);
-select pg_temp.try('visitor can read phone_number', $q$select count(*)::text from public.settings where key = 'phone_number'$q$, '1');
+select pg_temp.try('visitor can read whatsapp_number (used by Call us)', $q$select count(*)::text from public.settings where key = 'whatsapp_number'$q$, '1');
 select pg_temp.try('visitor staff_place_order -> refused',
   $q$select public.staff_place_order(pg_temp.cust(), '[{"sku":"TEST-MUG-01","qty":1}]', 'COD', 'PHONE')$q$, 'error:42501');
 select pg_temp.try('visitor place_order_core -> refused',

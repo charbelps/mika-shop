@@ -218,6 +218,7 @@ input[dir=ltr] { text-align: start; }
 
 /* ---------- track order (step 11) ---------- */
 .trk-status { font-size: 1.5rem; margin-block: .2rem .8rem; }
+.trk-paid { display: inline-block; margin: 0 0 .8rem; padding: .2rem .7rem; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 600; }
 .trk-steps { list-style: none; padding: 0; margin: 0 0 1rem; }
 .trk-steps li { position: relative; display: flex; align-items: center; gap: .7rem; padding-block: .45rem; color: var(--muted); }
 .trk-steps li:not(:last-child)::after { content: ''; position: absolute; inset-inline-start: 13px; inset-block-start: 36px;
