@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Checkout</title>
+  <link rel="stylesheet" href="css/shop.css">
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/db.js"></script>
+</head>
+<body>
+  <header id="site-header"></header>
+  <main class="wrap narrow" id="checkout">
+    <h1 data-i18n="co.title"></h1>
+    <div id="co-notes"></div>
+
+    <form id="co-form" novalidate autocomplete="on">
+      <section class="co-box">
+        <h2 data-i18n="co.your_details"></h2>
+        <div class="field">
+          <label for="co-name" data-i18n="co.f_name"></label>
+          <input id="co-name" name="name" type="text" autocomplete="name" required maxlength="80">
+        </div>
+        <div class="field">
+          <label for="co-phone" data-i18n="co.f_phone"></label>
+          <input id="co-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" required maxlength="25" placeholder="70 123 456">
+          <p class="hint" id="co-phone-hint"></p>
+        </div>
+      </section>
+
+      <section class="co-box">
+        <h2 data-i18n="co.delivery_address"></h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="co-gov" data-i18n="co.f_governorate"></label>
+            <select id="co-gov" name="governorate" required></select>
+          </div>
+          <div class="field">
+            <label for="co-dis" data-i18n="co.f_district"></label>
+            <select id="co-dis" name="district" required></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="co-town" data-i18n="co.f_town"></label>
+          <input id="co-town" name="town" type="text" required maxlength="80">
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="co-building" data-i18n="co.f_building"></label>
+            <input id="co-building" name="building" type="text" required maxlength="80">
+          </div>
+          <div class="field">
+            <label for="co-floor" data-i18n="co.f_floor"></label>
+            <input id="co-floor" name="floor" type="text" maxlength="20">
+          </div>
+        </div>
+        <div class="field">
+          <label for="co-street" data-i18n="co.f_street"></label>
+          <input id="co-street" name="street" type="text" maxlength="150">
+        </div>
+        <div class="field">
+          <label for="co-landmark" data-i18n="co.f_landmark"></label>
+          <input id="co-landmark" name="landmark" type="text" maxlength="150" data-i18n-placeholder="co.landmark_ph">
+        </div>
+        <div class="field">
+          <label for="co-loc" data-i18n="co.f_location_url"></label>
+          <input id="co-loc" name="location_url" type="url" inputmode="url" dir="ltr" maxlength="500" placeholder="https://maps.app.goo.gl/…">
+          <p class="hint" data-i18n="co.location_hint"></p>
+        </div>
+        <!-- Spam trap: hidden from people, bots fill it in. place_order refuses orders where it's filled. -->
+        <div class="hp" aria-hidden="true">
+          <label for="co-website">Website</label>
+          <input id="co-website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+      </section>
+
+      <section class="co-box">
+        <h2 data-i18n="co.payment"></h2>
+        <div id="co-payments"></div>
+      </section>
+
+      <section class="co-box">
+        <h2 data-i18n="co.summary"></h2>
+        <div id="co-items"></div>
+        <div class="sum-row sep"><span data-i18n="cart.subtotal"></span><span id="co-subtotal"></span></div>
+        <div class="sum-row" id="co-fee"></div>
+        <div class="sum-row total"><span data-i18n="co.total"></span><strong id="co-total"></strong></div>
+      </section>
+
+      <label class="check-line"><input type="checkbox" name="remember" checked> <span data-i18n="co.remember"></span></label>
+      <div class="alert alert-error" id="co-error" role="alert" hidden></div>
+      <button type="submit" class="btn btn-primary btn-block" id="co-submit" data-i18n="co.place_order"></button>
+      <p class="muted" style="font-size:.85rem;margin-top:.75rem" data-i18n="co.prices_note"></p>
+    </form>
+  </main>
+  <footer id="site-footer"></footer>
+  <script src="js/cart.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/checkout.js"></script>
+  <script>Checkout.initCheckout();</script>
+</body>
+</html>

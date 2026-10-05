@@ -1,0 +1,262 @@
+// Cart page + checkout page. The order itself is created by the database function
+// place_order (step 7), which re-checks everything and takes prices from the database.
+(function () {
+  const t = (k, v) => I18n.t(k, v);
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (s) => Shop.esc(s);
+  const moneyHtml = (n) => `<bdi>${esc(Shop.money(n))}</bdi>`;
+  const lineName = (l) => (I18n.lang === 'ar' && l.name_ar ? l.name_ar : l.name_en);
+  const lineLabel = (l) => (I18n.lang === 'ar' && l.label_ar ? l.label_ar : l.label_en) || '';
+
+  // Same rules as the SQL function normalize_phone(): +961 followed by 7 or 8 digits.
+  // Accepts 0 / 961 / +961 / 00961 prefixes, spaces, dashes, dots, brackets, Arabic digits.
+  function normalizePhone(raw) {
+    let s = String(raw || '')
+      .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+      .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+      .replace(/[\s\-().\/]/g, '');
+    if (s.startsWith('+')) {
+      if (!s.startsWith('+961')) return null;
+      s = s.slice(4);
+    } else if (s.startsWith('00961')) {
+      s = s.slice(5);
+    } else if (s.startsWith('961') && s.length >= 10) {
+      s = s.slice(3);
+    }
+    if (s.startsWith('0')) s = s.slice(1);
+    return /^\d{7,8}$/.test(s) ? '+961' + s : null;
+  }
+
+  // ---------- cart page ----------
+  async function initCart() {
+    await Shop.boot();
+    Shop.setTitle(t('cart.title'));
+    const box = $('#cart');
+    const notes = $('#cart-notes');
+    try {
+      const { changes } = await Cart.refresh();
+      notes.innerHTML = changes.map((c) => `<div class="alert alert-warn">${esc(t('cart.change_' + c.kind, { name: lineName(c.line) }))}</div>`).join('');
+    } catch (ex) {
+      console.error(ex);
+      notes.innerHTML = `<div class="alert alert-warn">${esc(t('cart.offline'))}</div>`;
+    }
+    render();
+    window.addEventListener('cart:change', render);
+
+    function render() {
+      const lines = Cart.items();
+      if (!lines.length) {
+        box.innerHTML = `<div class="empty"><p>${esc(t('cart.empty'))}</p><a class="btn btn-primary" href="index.html">${esc(t('shop.back_home'))}</a></div>`;
+        return;
+      }
+      const ok = lines.filter((l) => !l.unavailable);
+      const subtotal = ok.reduce((s, l) => s + l.qty * Number(l.price), 0);
+      box.innerHTML = `<div class="cart-lines">${lines.map((l) => `
+        <div class="cart-line${l.unavailable ? ' unavailable' : ''}" data-sku="${esc(l.sku)}" data-v="${l.variant_id || ''}">
+          <a class="cl-img" href="product.html?sku=${encodeURIComponent(l.sku)}">${Shop.photoImg(l.photo, lineName(l), true)}</a>
+          <div class="cl-body">
+            <a class="cl-name" href="product.html?sku=${encodeURIComponent(l.sku)}">${esc(lineName(l))}</a>
+            ${lineLabel(l) ? `<div class="muted">${esc(lineLabel(l))}</div>` : ''}
+            <div class="price">${moneyHtml(l.price)}</div>
+            ${l.unavailable ? `<div class="cl-warn">${esc(t('cart.unavailable'))}</div>` : `
+            <div class="qty qty-small">
+              <button type="button" data-act="minus" aria-label="−">−</button>
+              <input type="number" inputmode="numeric" min="1" max="${l.max || 99}" value="${l.qty}" aria-label="${esc(t('shop.qty'))}">
+              <button type="button" data-act="plus" aria-label="+">+</button>
+            </div>`}
+          </div>
+          <button type="button" class="cl-remove" data-act="remove" aria-label="${esc(t('cart.remove'))}">✕</button>
+        </div>`).join('')}</div>
+        <div class="summary">
+          <div class="sum-row"><span>${esc(t('cart.subtotal'))}</span><strong>${moneyHtml(subtotal)}</strong></div>
+          <p class="muted">${esc(t('cart.delivery_next'))}</p>
+          ${ok.length ? `<a class="btn btn-primary btn-block" href="checkout.html">${esc(t('cart.checkout'))}</a>` : ''}
+          <a class="btn btn-block" href="index.html" style="margin-top:.5rem">${esc(t('cart.continue'))}</a>
+        </div>`;
+      box.querySelectorAll('.cart-line').forEach((row) => {
+        const sku = row.dataset.sku;
+        const v = row.dataset.v ? Number(row.dataset.v) : null;
+        const line = lines.find((l) => l.sku === sku && (l.variant_id || null) === v);
+        row.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
+          if (b.dataset.act === 'remove') Cart.remove(sku, v);
+          if (b.dataset.act === 'minus') Cart.setQty(sku, v, line.qty - 1);
+          if (b.dataset.act === 'plus') Cart.setQty(sku, v, line.qty + 1);
+        }));
+        const inp = row.querySelector('input');
+        if (inp) inp.addEventListener('change', () => Cart.setQty(sku, v, Number(inp.value)));
+      });
+    }
+  }
+
+  // ---------- checkout page ----------
+  const ME_KEY = 'checkout:me';
+  function loadMe() { try { return JSON.parse(localStorage.getItem(ME_KEY)) || {}; } catch { return {}; } }
+  function saveMe(me) { try { localStorage.setItem(ME_KEY, JSON.stringify(me)); } catch { /* ignore */ } }
+  function forgetMe() { try { localStorage.removeItem(ME_KEY); } catch { /* ignore */ } }
+
+  async function initCheckout() {
+    await Shop.boot();
+    Shop.setTitle(t('co.title'));
+    const S = Shop.settings();
+    const form = $('#co-form');
+    const err = $('#co-error');
+
+    let refreshNote = '';
+    try {
+      const { changes } = await Cart.refresh();
+      if (changes.length) refreshNote = changes.map((c) => t('cart.change_' + c.kind, { name: lineName(c.line) })).join(' ');
+    } catch (ex) { console.error(ex); }
+    const lines = () => Cart.items().filter((l) => !l.unavailable);
+    if (!lines().length) {
+      $('#checkout').innerHTML = `<div class="empty"><p>${esc(t('cart.empty'))}</p><a class="btn btn-primary" href="index.html">${esc(t('shop.back_home'))}</a></div>`;
+      return;
+    }
+    if (refreshNote) $('#co-notes').innerHTML = `<div class="alert alert-warn">${esc(refreshNote)} <a href="cart.html">${esc(t('cart.title'))}</a></div>`;
+
+    // items summary
+    $('#co-items').innerHTML = lines().map((l) => `<div class="sum-row"><span>${l.qty} × ${esc(lineName(l))}${lineLabel(l) ? ' · ' + esc(lineLabel(l)) : ''}</span><span>${moneyHtml(l.qty * l.price)}</span></div>`).join('');
+
+    // delivery zones
+    const { data: zones, error: zErr } = await DB.client.from('delivery_zones')
+      .select('id,governorate,governorate_ar,district,district_ar,fee,eta_days').eq('active', true).order('sort');
+    if (zErr) { err.textContent = t('common.error_generic'); err.hidden = false; return; }
+    const govs = [...new Map(zones.map((z) => [z.governorate, z])).values()];
+    const govSel = form.governorate;
+    const disSel = form.district;
+    const label = (z, f) => (I18n.lang === 'ar' && z[f + '_ar'] ? z[f + '_ar'] : z[f]);
+    govSel.innerHTML = `<option value="">${esc(t('co.choose'))}</option>` + govs.map((z) => `<option value="${esc(z.governorate)}">${esc(label(z, 'governorate'))}</option>`).join('');
+    function fillDistricts() {
+      const list = zones.filter((z) => z.governorate === govSel.value);
+      disSel.innerHTML = `<option value="">${esc(t('co.choose'))}</option>` + list.map((z) => `<option value="${z.id}">${esc(label(z, 'district'))}</option>`).join('');
+      disSel.disabled = !list.length;
+      if (list.length === 1) disSel.value = list[0].id; // Beirut, Akkar...: only one district
+    }
+    govSel.addEventListener('change', () => { fillDistricts(); updateTotals(); });
+    disSel.addEventListener('change', updateTotals);
+
+    // payment methods: Whish / OMT only offered once their details are set in settings
+    const methods = [{ code: 'COD', info: t('co.cod_info') }];
+    if ((S.whish_number || '').trim()) methods.push({ code: 'WHISH', info: t('co.whish_info', { number: S.whish_number.trim() }) });
+    if ((S.omt_details || '').trim()) methods.push({ code: 'OMT', info: t('co.omt_info', { details: S.omt_details.trim() }) });
+    const hours = parseInt(S.unpaid_cancel_hours, 10);
+    $('#co-payments').innerHTML = methods.map((m, i) => `
+      <label class="pay-opt"><input type="radio" name="payment" value="${m.code}" ${i === 0 ? 'checked' : ''}>
+        <span><strong>${esc(t('co.pay_' + m.code))}</strong>
+        <span class="pay-info" dir="auto">${esc(m.info)}${m.code !== 'COD' && hours > 0 ? ' ' + esc(t('co.pay_within', { hours })) : ''}</span></span>
+      </label>`).join('');
+
+    // prefill from last time
+    const me = loadMe();
+    if (me.name) {
+      ['name', 'phone', 'town', 'building', 'floor', 'street', 'landmark'].forEach((k) => { if (me[k]) form[k].value = me[k]; });
+      const z = zones.find((x) => x.id === me.zone_id);
+      if (z) { govSel.value = z.governorate; fillDistricts(); disSel.value = z.id; }
+    } else {
+      disSel.disabled = true;
+    }
+
+    // live phone feedback
+    const phoneHint = $('#co-phone-hint');
+    function checkPhone() {
+      const n = normalizePhone(form.phone.value);
+      if (!form.phone.value.trim()) { phoneHint.textContent = t('co.phone_hint'); phoneHint.className = 'hint'; return null; }
+      if (n) { phoneHint.textContent = '✓ ' + n; phoneHint.className = 'hint ok'; } else { phoneHint.textContent = t('co.phone_bad'); phoneHint.className = 'hint bad'; }
+      return n;
+    }
+    form.phone.addEventListener('input', checkPhone);
+    checkPhone();
+
+    function zone() { return zones.find((z) => z.id === Number(disSel.value)); }
+    function updateTotals() {
+      const subtotal = lines().reduce((s, l) => s + l.qty * Number(l.price), 0);
+      const z = zone();
+      const feeRow = $('#co-fee');
+      const submit = $('#co-submit');
+      let fee = null;
+      if (!z) {
+        feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="muted">${esc(t('co.choose_area'))}</span>`;
+      } else if (z.fee == null) {
+        feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="bad">${esc(t('co.no_delivery'))}</span>`;
+      } else {
+        fee = Number(z.fee);
+        const eta = z.eta_days ? ` <span class="muted">(${esc(t('co.eta', { days: z.eta_days }))})</span>` : '';
+        feeRow.innerHTML = `<span>${esc(t('co.delivery'))}${eta}</span><span>${fee === 0 ? esc(t('co.free')) : moneyHtml(fee)}</span>`;
+      }
+      $('#co-subtotal').innerHTML = moneyHtml(subtotal);
+      $('#co-total').innerHTML = fee == null ? '—' : moneyHtml(subtotal + fee);
+      submit.disabled = !!z && z.fee == null;
+    }
+    updateTotals();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.hidden = true;
+      const phone = checkPhone();
+      const z = zone();
+      const need = [];
+      if (!form.name.value.trim()) need.push('name');
+      if (!phone) need.push('phone');
+      if (!z) need.push(govSel.value ? 'district' : 'governorate');
+      if (!form.town.value.trim()) need.push('town');
+      if (!form.building.value.trim()) need.push('building');
+      const loc = form.location_url.value.trim();
+      if (loc && !/^https?:\/\/\S+$/i.test(loc)) need.push('location_url');
+      form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
+      if (need.length) {
+        need.forEach((n) => form[n] && form[n].setAttribute('aria-invalid', 'true'));
+        err.textContent = t('co.fix_fields', { fields: need.map((n) => t('co.f_' + n)).join(I18n.lang === 'ar' ? '، ' : ', ') });
+        err.hidden = false;
+        form[need[0]] && form[need[0]].focus();
+        return;
+      }
+      if (z.fee == null) { err.textContent = t('co.no_delivery'); err.hidden = false; return; }
+
+      const address = [
+        form.building.value.trim() && 'Bldg: ' + form.building.value.trim(),
+        form.floor.value.trim() && 'Floor: ' + form.floor.value.trim(),
+        form.street.value.trim(),
+      ].filter(Boolean).join(' · ');
+      const payload = {
+        p_customer: {
+          name: form.name.value.trim(), phone, zone_id: z.id, town: form.town.value.trim(), address,
+          landmark: form.landmark.value.trim(), location_url: loc,
+        },
+        p_items: lines().map((l) => ({ sku: l.sku, variant_id: l.variant_id || null, qty: l.qty })),
+        p_payment: form.payment.value,
+        p_honeypot: form.website.value,
+      };
+
+      const btn = $('#co-submit');
+      btn.disabled = true;
+      btn.textContent = t('co.placing');
+      const { data, error } = await DB.client.rpc('place_order', payload);
+      btn.disabled = false;
+      btn.textContent = t('co.place_order');
+      if (error) {
+        const m = (error.message || '') + ' ' + (error.details || '');
+        const code = (/[A-Z_]{6,}/.exec(error.message || '') || [''])[0];
+        if (code === 'OUT_OF_STOCK' || code === 'ITEM_UNAVAILABLE') {
+          await Cart.refresh().catch(() => {});
+          err.innerHTML = `${esc(t('co.err_stock'))} <a href="cart.html">${esc(t('cart.title'))}</a>`;
+        } else {
+          err.textContent = t('co.err_' + code) !== 'co.err_' + code ? t('co.err_' + code) : t('common.error_generic');
+        }
+        err.hidden = false;
+        console.warn('place_order failed:', m);
+        err.scrollIntoView({ block: 'center' });
+        return;
+      }
+      if (form.remember.checked) {
+        saveMe({ name: form.name.value.trim(), phone: form.phone.value.trim(), zone_id: z.id, town: form.town.value.trim(),
+          building: form.building.value.trim(), floor: form.floor.value.trim(), street: form.street.value.trim(), landmark: form.landmark.value.trim() });
+      } else {
+        forgetMe();
+      }
+      try { sessionStorage.setItem('lastOrder', JSON.stringify(data)); } catch { /* order page falls back */ }
+      Cart.clear();
+      location.href = 'order.html?no=' + encodeURIComponent(data.order_no);
+    });
+  }
+
+  window.Checkout = { initCart, initCheckout, normalizePhone };
+})();

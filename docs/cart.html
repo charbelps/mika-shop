@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Cart</title>
+  <link rel="stylesheet" href="css/shop.css">
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/db.js"></script>
+</head>
+<body>
+  <header id="site-header"></header>
+  <main class="wrap narrow">
+    <h1 data-i18n="cart.title"></h1>
+    <div id="cart-notes"></div>
+    <div id="cart"><div class="skeleton" style="height:120px"></div></div>
+  </main>
+  <footer id="site-footer"></footer>
+  <script src="js/cart.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/checkout.js"></script>
+  <script>Checkout.initCart();</script>
+</body>
+</html>
