@@ -1,42 +1,34 @@
-// Builds the Telegram text for a new order. Plain text (no Markdown), so names with
-// special characters can never break the message.
+// Builds the phone notification for a new order (web push; Telegram was dropped 6 Oct 2026).
+// Short, because phones cut long notifications: the order number, what to collect, where.
+// English and Arabic are both sent; the phone shows the one matching its language.
 
 export interface OrderItem {
   qty: number;
-  name_en: string;
-  label: string | null;
-  line_total: number | string;
 }
 
 export interface Order {
+  id: number;
   order_no: string;
   name: string;
-  phone: string;
-  governorate: string;
   district: string;
-  town: string;
-  address: string;
-  landmark: string | null;
-  location_url: string | null;
-  subtotal: number | string;
-  delivery_fee: number | string;
   total: number | string;
   payment_method: string;
   source?: string | null;
+  is_first_order?: boolean | null;
 }
 
-// Orders Mika entered herself (F7). Website orders get no extra line.
-const SOURCE: Record<string, string> = {
-  PHONE: '☎️ Taken by phone',
-  INSTAGRAM: '📷 Taken on Instagram',
-  WHATSAPP: '💬 Taken on WhatsApp',
-};
+export interface Push {
+  tag: string;
+  url: string;
+  lang: 'en' | 'ar';
+  en: { title: string; body: string };
+  ar: { title: string; body: string };
+}
 
-const PAY: Record<string, string> = {
-  COD: '💵 Cash on delivery',
-  WHISH: '📲 Whish (waiting for payment)',
-  OMT: '🏦 OMT (waiting for payment)',
-};
+const PAY_EN: Record<string, string> = { COD: 'Cash on delivery', WHISH: 'Whish (waiting)', OMT: 'OMT (waiting)' };
+const PAY_AR: Record<string, string> = { COD: 'الدفع عند الاستلام', WHISH: 'Whish (بانتظار الدفع)', OMT: 'OMT (بانتظار الدفع)' };
+const SRC_EN: Record<string, string> = { PHONE: ' · by phone', INSTAGRAM: ' · Instagram', WHATSAPP: ' · WhatsApp' };
+const SRC_AR: Record<string, string> = { PHONE: ' · هاتفياً', INSTAGRAM: ' · إنستغرام', WHATSAPP: ' · واتساب' };
 
 function amount(n: number | string, currency: string): string {
   const v = Number(n);
@@ -44,26 +36,22 @@ function amount(n: number | string, currency: string): string {
   return currency ? `${s} ${currency}` : s;
 }
 
-export function buildMessage(order: Order, items: OrderItem[], currency = ''): string {
-  const lines: string[] = [];
-  lines.push(`🛒 New order ${order.order_no}`);
-  if (order.source && SOURCE[order.source]) lines.push(SOURCE[order.source]);
-  lines.push('');
-  lines.push(`👤 ${order.name}`);
-  lines.push(`📞 ${order.phone}`);
-  lines.push(`📍 ${order.town}, ${order.district} (${order.governorate})`);
-  lines.push(`🏠 ${order.address}`);
-  if (order.landmark) lines.push(`🔎 ${order.landmark}`);
-  if (order.location_url) lines.push(`🗺️ ${order.location_url}`);
-  lines.push('');
-  for (const it of items) {
-    const label = it.label ? ` (${it.label})` : '';
-    lines.push(`• ${it.qty} × ${it.name_en}${label}: ${amount(it.line_total, currency)}`);
-  }
-  lines.push('');
-  lines.push(`Subtotal: ${amount(order.subtotal, currency)}`);
-  lines.push(`Delivery: ${amount(order.delivery_fee, currency)}`);
-  lines.push(`TOTAL: ${amount(order.total, currency)}`);
-  lines.push(PAY[order.payment_method] ?? order.payment_method);
-  return lines.join('\n').slice(0, 4000); // Telegram limit is 4096
+export function buildPush(order: Order, items: OrderItem[], currency = '', lang: 'en' | 'ar' = 'en'): Push {
+  const n = items.reduce((s, i) => s + Number(i.qty || 0), 0);
+  const total = amount(order.total, currency);
+  const src = order.source ?? '';
+  const isNew = order.is_first_order === true;
+  return {
+    tag: 'order-' + order.order_no,
+    url: `staff/prep.html?open=${order.id}`,
+    lang,
+    en: {
+      title: `🛒 New order ${order.order_no}${isNew ? ' · NEW CUSTOMER' : ''}`,
+      body: `${order.name} · ${order.district}\n${n} ${n === 1 ? 'item' : 'items'} · ${total} · ${PAY_EN[order.payment_method] ?? order.payment_method}${SRC_EN[src] ?? ''}`,
+    },
+    ar: {
+      title: `🛒 طلب جديد ${order.order_no}${isNew ? ' · زبون جديد' : ''}`,
+      body: `${order.name} · ${order.district}\n${n} قطعة · ${total} · ${PAY_AR[order.payment_method] ?? order.payment_method}${SRC_AR[src] ?? ''}`,
+    },
+  };
 }

@@ -32,6 +32,7 @@
       </div>
       <div class="toolbar chips-row">
         <button type="button" class="chip-btn" data-stab="shop" aria-pressed="true" data-i18n="set.tab_shop"></button>
+        <button type="button" class="chip-btn" data-stab="texts" aria-pressed="false" data-i18n="set.tab_texts"></button>
         <button type="button" class="chip-btn" data-stab="delivery" aria-pressed="false" data-i18n="set.tab_delivery"></button>
         <button type="button" class="chip-btn" data-stab="staff" aria-pressed="false" data-roles="ADMIN" data-i18n="set.tab_staff"></button>
       </div>
@@ -44,6 +45,16 @@
         <div class="alert alert-error" id="set-error" role="alert" hidden></div>
         <div class="set-save">
           <button type="submit" class="btn btn-primary btn-block" id="set-save" data-i18n="set.save"></button>
+        </div>
+      </form>
+
+      <!-- ================= CUSTOMER-FACING BUSINESS TEXT ================= -->
+      <form id="text-form" novalidate autocomplete="off" onsubmit="return false" hidden>
+        <p class="hint" data-i18n="set.texts_intro"></p>
+        <div id="text-groups"></div>
+        <div class="alert alert-error" id="text-error" role="alert" hidden></div>
+        <div class="set-save">
+          <button type="submit" class="btn btn-primary btn-block" id="text-save" data-i18n="set.save"></button>
         </div>
       </form>
 

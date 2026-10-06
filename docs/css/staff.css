@@ -135,6 +135,10 @@ input[dir=ltr] { text-align: start; }
 .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; margin-block-end: 1rem; align-items: center; }
 .toolbar input[type=search] { flex: 1 1 200px; }
 .toolbar select { flex: 0 1 200px; width: auto; }
+.alert-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .85rem 1rem; margin-block-end: 1rem; }
+.alert-panel h2 { margin-block-end: .25rem; }
+.alert-panel .hint { margin-block: .25rem .65rem; }
+.alert-panel .toolbar { margin: 0; }
 .card { background: var(--surface); border-radius: var(--radius); padding: 1rem; margin-block-end: .75rem; }
 .list { display: flex; flex-direction: column; gap: .5rem; }
 .row-item {

@@ -34,6 +34,7 @@
   function showTab(name) {
     tabs.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.stab === name)));
     $('#set-form').hidden = name !== 'shop';
+    $('#text-form').hidden = name !== 'texts';
     $('#zones').hidden = name !== 'delivery';
     $('#staff').hidden = name !== 'staff';
     if (name === 'staff' && canEdit && !staffLoaded) loadStaff();
@@ -59,6 +60,18 @@
   ];
   const ALL_KEYS = GROUPS.flatMap((g) => g.fields.map((f) => f.key));
   let saved = {};
+  const TEXT_GROUPS = [
+    { id: 'text_intro', fields: ['shop_intro_en', 'shop_intro_ar'] },
+    { id: 'text_delivery', fields: ['delivery_payment_en', 'delivery_payment_ar', 'checkout_note_en', 'checkout_note_ar'] },
+    { id: 'text_confirmation', fields: ['order_confirmation_en', 'order_confirmation_ar'] },
+    { id: 'text_whatsapp', fields: [
+      'whatsapp_ask_en', 'whatsapp_ask_ar', 'whatsapp_share_en', 'whatsapp_share_ar',
+      'whatsapp_order_en', 'whatsapp_order_ar', 'whatsapp_status_en', 'whatsapp_status_ar',
+    ] },
+    { id: 'text_footer', fields: ['footer_note_en', 'footer_note_ar'] },
+  ];
+  const ALL_TEXT_KEYS = TEXT_GROUPS.flatMap((g) => g.fields);
+  let textSaved = {};
 
   async function loadSettings() {
     const { data, error } = await DB.client.from('settings').select('key,value').in('key', ALL_KEYS);
@@ -96,6 +109,14 @@
     });
     return out;
   }
+  function textChanges() {
+    const out = {};
+    ALL_TEXT_KEYS.forEach((k) => {
+      const el = $('#text-' + k);
+      if (el && el.value.trim() !== (textSaved[k] || '').trim()) out[k] = el.value.trim();
+    });
+    return out;
+  }
   function markDirty() {
     const n = Object.keys(changes()).length;
     const btn = $('#set-save');
@@ -103,7 +124,7 @@
     btn.textContent = n ? t('set.save_n', { n }) : t('set.saved_all');
   }
   window.addEventListener('beforeunload', (e) => {
-    if (canEdit && Object.keys(changes()).length) { e.preventDefault(); e.returnValue = ''; }
+    if (canEdit && (Object.keys(changes()).length || Object.keys(textChanges()).length)) { e.preventDefault(); e.returnValue = ''; }
   });
 
   $('#set-form').addEventListener('submit', async (e) => {
@@ -128,6 +149,66 @@
     }
     toast(t('set.saved'));
     await loadSettings();
+  });
+
+  async function loadTexts() {
+    const { data, error } = await DB.client.from('settings').select('key,value').in('key', ALL_TEXT_KEYS);
+    if (error) {
+      $('#text-groups').innerHTML = `<div class="alert alert-error">${esc(errText(error))}</div>`;
+      return;
+    }
+    textSaved = Object.fromEntries(data.map((r) => [r.key, r.value || '']));
+    renderTexts();
+  }
+
+  function renderTexts() {
+    $('#text-groups').innerHTML = TEXT_GROUPS.map((g) => `
+      <fieldset><legend>${esc(t('set.g_' + g.id))}</legend>
+        ${g.fields.map((key) => {
+          const id = 'text-' + key;
+          const isArabic = key.endsWith('_ar');
+          const empty = !(textSaved[key] || '').trim();
+          return `<div class="field">
+            <label for="${id}">${esc(t('set.f_' + key))} ${empty ? `<span class="pill pill-warn">${esc(t('set.empty'))}</span>` : ''}</label>
+            <textarea id="${id}" name="${key}" maxlength="5000" ${isArabic ? 'dir="rtl" lang="ar"' : 'dir="auto"'} ${canEdit ? '' : 'readonly'}>${esc(textSaved[key])}</textarea>
+            <p class="hint">${esc(t('set.h_' + key))}</p>
+          </div>`;
+        }).join('')}
+      </fieldset>`).join('');
+    $('#text-save').hidden = !canEdit;
+    $('#text-groups').querySelectorAll('textarea').forEach((el) => el.addEventListener('input', markTextDirty));
+    markTextDirty();
+  }
+
+  function markTextDirty() {
+    const n = Object.keys(textChanges()).length;
+    const btn = $('#text-save');
+    btn.disabled = n === 0;
+    btn.textContent = n ? t('set.save_n', { n }) : t('set.saved_all');
+  }
+
+  $('#text-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!canEdit) return;
+    const err = $('#text-error');
+    err.hidden = true;
+    $('#text-groups').querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
+    const values = textChanges();
+    if (!Object.keys(values).length) return;
+    const btn = $('#text-save');
+    btn.disabled = true;
+    btn.textContent = t('common.saving');
+    const { error } = await DB.client.rpc('admin_save_settings', { p_values: values });
+    if (error) {
+      const field = error.details && $('#text-' + error.details);
+      err.textContent = errText(error) + (field ? ' (' + t('set.f_' + error.details) + ')' : '');
+      err.hidden = false;
+      if (field) { field.setAttribute('aria-invalid', 'true'); field.focus(); }
+      markTextDirty();
+      return;
+    }
+    toast(t('set.saved'));
+    await loadTexts();
   });
 
   // ================= DELIVERY AREAS =================
@@ -413,7 +494,7 @@
   // pick the tab first, then load: a tab pressed while loading is never switched back
   if (startTab === 'staff' && !canEdit) startTab = 'shop';
   showTab(startTab);
-  await Promise.all([loadSettings(), loadZones()]);
+  await Promise.all([loadSettings(), loadTexts(), loadZones()]);
   updateZoneSave();
-  window.Settings = { changes, zDirty, parseFee };
+  window.Settings = { changes, textChanges, zDirty, parseFee };
 })();

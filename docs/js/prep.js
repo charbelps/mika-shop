@@ -6,7 +6,8 @@
   const canEdit = me.role === 'ADMIN';
   const t = I18n.t;
   const $ = (s, root = document) => root.querySelector(s);
-  const S = await DB.settings().catch(() => ({}));
+  let settingsError = null;
+  const S = await DB.settings().catch((error) => { settingsError = error; return {}; });
   const money = (n) => `<bdi>${esc(I18n.money(n, S.currency))}</bdi>`;
   const PAGE = 30;
   const state = { tab: 'todo', q: '', page: 0, req: 0, current: null };
@@ -15,14 +16,14 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   }
   let toastTimer;
-  function toast(msg, isError) {
+  function toast(msg, isError, duration) {
     let el = $('.toast');
     if (!el) { el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
     el.textContent = msg;
     el.classList.toggle('error', !!isError);
     el.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { el.hidden = true; }, isError ? 6000 : 3500);
+    toastTimer = setTimeout(() => { el.hidden = true; }, duration || (isError ? 6000 : 3500));
   }
   function errText(error) {
     const code = (/[A-Z_]{6,}/.exec((error && error.message) || '') || [''])[0];
@@ -32,6 +33,206 @@
   }
   const when = (iso) => new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB' : 'en-GB',
     { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+  // ---------- new-order alerts ----------
+  let audioContext = null;
+  let soundEnabled = false;
+  let pushRegistration = null;
+  let pushSubscription = null;
+  let pushSaved = false;
+  const pushButton = $('#push-enable');
+  const pushTestButton = $('#push-test');
+  const pushStatus = $('#push-status');
+  const soundButton = $('#sound-enable');
+  if (!window.AudioContext && !window.webkitAudioContext) {
+    soundButton.disabled = true;
+    soundButton.textContent = t('prep.sound_unsupported');
+  }
+
+  function pushMessage(key) {
+    pushStatus.textContent = t(key);
+    pushStatus.classList.toggle('bad', key.includes('error') || key.includes('denied'));
+    pushStatus.classList.toggle('ok', key.includes('enabled'));
+  }
+
+  function decodeVapidKey(key) {
+    const padding = '='.repeat((4 - key.length % 4) % 4);
+    const base64 = (key + padding).replace(/-/g, '+').replace(/_/g, '/');
+    return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  }
+
+  async function savePushSubscription(subscription) {
+    const keys = subscription.toJSON().keys;
+    if (!keys || !keys.p256dh || !keys.auth) throw new Error(t('prep.push_error_keys'));
+    const { error } = await DB.client.rpc('save_push_subscription', {
+      p_endpoint: subscription.endpoint,
+      p_p256dh: keys.p256dh,
+      p_auth: keys.auth,
+      p_user_agent: navigator.userAgent,
+      p_lang: I18n.lang,
+    });
+    if (error) throw error;
+    pushSubscription = subscription;
+    pushSaved = true;
+    pushButton.textContent = t('prep.push_disable');
+    pushTestButton.disabled = false;
+    pushMessage('prep.push_enabled');
+  }
+
+  async function initPush() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      pushButton.disabled = true;
+      pushMessage('prep.push_unsupported');
+      return;
+    }
+    if (settingsError) {
+      pushButton.disabled = true;
+      pushMessage('prep.push_error');
+      toast(errText(settingsError), true);
+      return;
+    }
+    if (!S.push_public_key) {
+      pushButton.disabled = true;
+      pushMessage('prep.push_not_configured');
+      return;
+    }
+    pushButton.disabled = true;
+    const scope = new URL('../', document.baseURI).pathname;
+    pushRegistration = await navigator.serviceWorker.register(new URL('../sw.js', document.baseURI), { scope });
+    pushSubscription = await pushRegistration.pushManager.getSubscription();
+    if (!pushSubscription) {
+      if (Notification.permission === 'denied') {
+        pushMessage('prep.push_denied');
+        return;
+      }
+      pushButton.disabled = false;
+      pushMessage('prep.push_off');
+      return;
+    }
+    const { data, error } = await DB.client.from('push_subscriptions').select('id')
+      .eq('endpoint', pushSubscription.endpoint).maybeSingle();
+    if (error) {
+      pushMessage('prep.push_error');
+      toast(errText(error), true);
+      return;
+    }
+    if (data) {
+      pushSaved = true;
+      pushButton.textContent = t('prep.push_disable');
+      pushTestButton.disabled = false;
+      pushMessage(Notification.permission === 'denied' ? 'prep.push_denied' : 'prep.push_enabled');
+    } else {
+      if (Notification.permission === 'denied') {
+        pushMessage('prep.push_denied');
+        return;
+      }
+      pushButton.disabled = false;
+      pushMessage('prep.push_finish_setup');
+    }
+  }
+
+  pushButton.addEventListener('click', async () => {
+    pushButton.disabled = true;
+    try {
+      if (pushSaved && pushSubscription) {
+        const endpoint = pushSubscription.endpoint;
+        await pushSubscription.unsubscribe();
+        const { error } = await DB.client.rpc('remove_push_subscription', { p_endpoint: endpoint });
+        if (error) throw error;
+        pushSubscription = null;
+        pushSaved = false;
+        pushTestButton.disabled = true;
+        pushButton.textContent = t('prep.push_enable');
+        pushMessage('prep.push_off');
+        return;
+      }
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          pushMessage(permission === 'denied' ? 'prep.push_denied' : 'prep.push_not_enabled');
+          return;
+        }
+      } else if (Notification.permission !== 'granted') {
+        pushMessage('prep.push_denied');
+        return;
+      }
+      if (!pushRegistration) {
+        const scope = new URL('../', document.baseURI).pathname;
+        pushRegistration = await navigator.serviceWorker.register(new URL('../sw.js', document.baseURI), { scope });
+      }
+      pushSubscription = await pushRegistration.pushManager.getSubscription()
+        || await pushRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: decodeVapidKey(S.push_public_key),
+        });
+      await savePushSubscription(pushSubscription);
+      toast(t('prep.push_enabled'));
+    } catch (error) {
+      pushMessage('prep.push_error');
+      toast(errText(error), true);
+    } finally {
+      pushButton.disabled = false;
+    }
+  });
+
+  pushTestButton.addEventListener('click', async () => {
+    pushTestButton.disabled = true;
+    try {
+      const { data, error } = await DB.client.functions.invoke('new-order-alert', { body: { action: 'test' } });
+      if (error) throw error;
+      if (data && data.error === 'NOTIFICATIONS_NOT_CONFIGURED') throw new Error(t('prep.push_not_configured'));
+      if (!data || !data.sent) throw new Error(t('prep.push_test_none'));
+      toast(t('prep.push_test_sent'));
+    } catch (error) {
+      toast(errText(error), true);
+    } finally {
+      pushTestButton.disabled = !pushSaved;
+    }
+  });
+
+  $('#sound-enable').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    if (soundEnabled) {
+      soundEnabled = false;
+      button.textContent = t('prep.sound_enable');
+      return;
+    }
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) throw new Error(t('prep.sound_unsupported'));
+      audioContext ||= new AudioContextClass();
+      await audioContext.resume();
+      soundEnabled = true;
+      button.textContent = t('prep.sound_disable');
+      playAlertSound();
+    } catch (error) {
+      toast(errText(error), true);
+    }
+  });
+
+  function playAlertSound() {
+    if (!soundEnabled || !audioContext) return;
+    const now = audioContext.currentTime;
+    [880, 660].forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const start = now + index * .2;
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(.0001, start);
+      gain.gain.exponentialRampToValueAtTime(.16, start + .02);
+      gain.gain.exponentialRampToValueAtTime(.0001, start + .16);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(start);
+      oscillator.stop(start + .17);
+    });
+  }
+
+  initPush().catch((error) => {
+    pushButton.disabled = true;
+    pushMessage('prep.push_error');
+    toast(errText(error), true);
+  });
   function payPill(o) {
     const cls = o.payment_status === 'PAID' ? 'pill-ok' : o.payment_status === 'AWAITING' ? 'pill-warn' : '';
     return `<span class="pill ${cls}">${esc(t('prep.method_' + o.payment_method))} · ${esc(t('status.pay_' + o.payment_status))}</span>`;
@@ -43,6 +244,18 @@
   function statusPill(s) {
     const cls = s === 'CANCELLED' || s === 'RETURNED' ? 'pill-off' : s === 'NEW' ? 'pill-danger' : s === 'PACKED' ? 'pill-ok' : '';
     return `<span class="pill ${cls}">${esc(t('status.' + s))}</span>`;
+  }
+  function fillTemplate(template, values) {
+    return template.replace(/\{(\w+)\}/g, (match, key) =>
+      Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
+  }
+  function statusWhatsAppUrl(o) {
+    const track = new URL('../track.html', location.href);
+    track.searchParams.set('no', o.order_no);
+    const values = { name: o.name, no: o.order_no, status: t('status.' + o.status), url: track.href };
+    const custom = String(S['whatsapp_status_' + I18n.lang] || '').trim();
+    const message = custom ? fillTemplate(custom, values) : t('ord.wa_status', values);
+    return 'https://wa.me/' + o.phone.replace(/\D/g, '') + '?text=' + encodeURIComponent(message);
   }
 
   // ---------- list ----------
@@ -132,6 +345,7 @@
           <a class="btn btn-small" href="tel:${esc(o.phone)}">📞 ${esc(t('prep.call'))}</a>
           <a class="btn btn-small" href="https://wa.me/${esc(digits)}" target="_blank" rel="noopener">💬 ${esc(t('prep.whatsapp'))}</a>
           ${o.location_url ? `<a class="btn btn-small" href="${esc(o.location_url)}" target="_blank" rel="noopener noreferrer">📍 ${esc(t('prep.map'))}</a>` : ''}
+          ${canEdit && o.status !== 'NEW' ? `<a class="btn btn-small" href="${esc(statusWhatsAppUrl(o))}" target="_blank" rel="noopener">${esc(t('prep.whatsapp_status'))}</a>` : ''}
         </div>
         <p>${esc(o.town)}, ${esc(o.district)} (${esc(o.governorate)})<br>${esc(o.address)}${o.landmark ? `<br><span class="meta">${esc(o.landmark)}</span>` : ''}</p>
       </fieldset>
@@ -253,7 +467,8 @@
   let reloadTimer;
   function onChange(payload) {
     if (payload && payload.eventType === 'INSERT' && payload.new && payload.new.order_no) {
-      toast(t('prep.new_order', { no: payload.new.order_no }));
+      toast(t('prep.new_order', { no: payload.new.order_no }), false, 12000);
+      playAlertSound();
     }
     clearTimeout(reloadTimer);
     reloadTimer = setTimeout(load, 400);

@@ -75,6 +75,7 @@ select pg_temp.try('prefix with a space -> BAD_PREFIX', $q$select public.admin_s
 select pg_temp.try('currency too long -> TOO_LONG', $q$select public.admin_save_settings('{"currency":"US DOLLARS!!"}')::text$q$, 'error:P0001:TOO_LONG');
 select pg_temp.try('unknown key -> UNKNOWN_SETTING', $q$select public.admin_save_settings('{"hack":"x"}')::text$q$, 'error:P0001:UNKNOWN_SETTING');
 select pg_temp.try('technical key order_alert_url -> UNKNOWN_SETTING', $q$select public.admin_save_settings('{"order_alert_url":"https://evil.example"}')::text$q$, 'error:P0001:UNKNOWN_SETTING');
+select pg_temp.try('technical key push_public_key -> UNKNOWN_SETTING', $q$select public.admin_save_settings('{"push_public_key":"not-a-setting"}')::text$q$, 'error:P0001:UNKNOWN_SETTING');
 select pg_temp.try('one bad value -> nothing saved (one transaction)',
   $q$select public.admin_save_settings('{"currency":"EUR","unpaid_cancel_hours":"x"}')::text$q$, 'error:P0001:BAD_NUMBER');
 select pg_temp.try('... currency still USD', $q$select value from public.settings where key = 'currency'$q$, 'USD');

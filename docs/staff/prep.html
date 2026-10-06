@@ -33,6 +33,16 @@
         <span class="pill" id="o-live"></span>
         <a class="btn btn-primary btn-small" href="new-order.html" data-roles="ADMIN" data-i18n="prep.new_order_btn"></a>
       </div>
+      <section class="alert-panel" aria-labelledby="alerts-title" data-roles="ADMIN OWNER">
+        <h2 id="alerts-title" data-i18n="prep.alerts_title"></h2>
+        <p class="hint" data-i18n="prep.alerts_help"></p>
+        <p class="hint" id="push-status" role="status" aria-live="polite"></p>
+        <div class="toolbar">
+          <button type="button" class="btn btn-small" id="sound-enable" data-i18n="prep.sound_enable"></button>
+          <button type="button" class="btn btn-small" id="push-enable" data-i18n="prep.push_enable"></button>
+          <button type="button" class="btn btn-small" id="push-test" disabled data-i18n="prep.push_test"></button>
+        </div>
+      </section>
       <div class="toolbar chips-row">
         <button type="button" class="chip-btn" data-otab="todo" aria-pressed="true" data-i18n="prep.tab_todo"></button>
         <button type="button" class="chip-btn" data-otab="awaiting" aria-pressed="false" data-i18n="prep.tab_awaiting"></button>

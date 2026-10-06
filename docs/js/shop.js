@@ -47,6 +47,15 @@
   let S = {};
   const shopName = () => (I18n.lang === 'ar' ? (S.shop_name_ar || S.shop_name_en) : (S.shop_name_en || S.shop_name_ar)) || t('shop.default_name');
   const money = (n) => I18n.money(n, S.currency);
+  function businessText(key, fallbackKey, vars) {
+    const custom = String(S[key + '_' + I18n.lang] || '').trim();
+    if (!custom) return t(fallbackKey, vars);
+    return custom.replace(/\{(\w+)\}/g, (match, name) =>
+      vars && Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match);
+  }
+  function optionalBusinessText(key) {
+    return String(S[key + '_' + I18n.lang] || '').trim();
+  }
   // <bdi> keeps each amount in one piece inside Arabic (right-to-left) text.
   const moneyHtml = (n) => `<bdi>${esc(money(n))}</bdi>`;
 
@@ -119,7 +128,7 @@
     const f = document.getElementById('site-footer');
     if (f) {
       f.className = 'site-footer';
-      f.innerHTML = `<div class="wrap"><p data-shop-name></p><p><a href="track.html" data-i18n="trk.footer_link"></a></p><p id="footer-wa"></p><p id="footer-call"></p><p><a href="privacy.html" data-i18n="shop.privacy"></a></p></div>`;
+      f.innerHTML = `<div class="wrap"><p data-shop-name></p><p id="footer-note" dir="auto" hidden></p><p><a href="track.html" data-i18n="trk.footer_link"></a></p><p id="footer-wa"></p><p id="footer-call"></p><p><a href="privacy.html" data-i18n="shop.privacy"></a></p></div>`;
     }
   }
   function updateCartCount() {
@@ -136,6 +145,11 @@
     I18n.apply(document);
     try { S = await DB.settings(); } catch (ex) { console.error(ex); S = {}; }
     document.querySelectorAll('[data-shop-name]').forEach((el) => { el.textContent = shopName(); });
+    const footerNote = optionalBusinessText('footer_note');
+    if (footerNote && $('#footer-note')) {
+      $('#footer-note').textContent = footerNote;
+      $('#footer-note').hidden = false;
+    }
     const wa = waLink(t('shop.wa_hello'));
     if (wa && $('#footer-wa')) $('#footer-wa').innerHTML = `<a href="${esc(wa)}" target="_blank" rel="noopener">${esc(t('shop.contact_whatsapp'))}</a>`;
     const tel = telLink();
@@ -171,6 +185,11 @@
   async function initHome() {
     await boot();
     setTitle('');
+    const intro = optionalBusinessText('shop_intro');
+    if (intro) {
+      $('#home-intro').textContent = intro;
+      $('#home-intro').hidden = false;
+    }
     const catBox = $('#home-categories');
     const grid = $('#home-featured');
     grid.innerHTML = skeletonGrid(4);
@@ -382,14 +401,14 @@
       toast(t('shop.added_to_cart'), 'cart.html', t('shop.view_cart'));
     });
 
-    const wa = waLink(t('shop.wa_ask', { name, sku: p.sku, url: location.href }));
+    const wa = waLink(businessText('whatsapp_ask', 'shop.wa_ask', { name, sku: p.sku, url: location.href }));
     if (wa) { const a = $('#pp-wa'); a.href = wa; a.hidden = false; }
     const tel = telLink();
     if (tel) { const a = $('#pp-call'); a.href = tel; a.hidden = false; }
 
     // Share: WhatsApp link (customer picks the contact) + the phone's own share menu when it has one.
     const shareUrl = `${location.origin}${location.pathname}?sku=${encodeURIComponent(p.sku)}`;
-    const shareText = t('shop.share_text', { name });
+    const shareText = businessText('whatsapp_share', 'shop.share_text', { name });
     $('#pp-share-wa').href = `https://wa.me/?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`;
     if (navigator.share) {
       const btn = $('#pp-share');
@@ -426,7 +445,7 @@
   }
 
   window.Shop = {
-    boot, initHome, initCategory, initProduct, initPrivacy, toast, esc, money,
+    boot, initHome, initCategory, initProduct, initPrivacy, toast, esc, money, businessText, optionalBusinessText,
     settings: () => S, shopName, setTitle, photoImg, waLink, telLink, allCategories,
   };
 })();

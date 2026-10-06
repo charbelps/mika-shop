@@ -128,6 +128,10 @@
         <span><strong>${esc(t('co.pay_' + m.code))}</strong>
         <span class="pay-info" dir="auto">${esc(m.info)}${m.code !== 'COD' && hours > 0 ? ' ' + esc(t('co.pay_within', { hours })) : ''}</span></span>
       </label>`).join('');
+    const deliveryNote = Shop.optionalBusinessText('delivery_payment');
+    if (deliveryNote) { $('#co-business-note').textContent = deliveryNote; $('#co-business-note').hidden = false; }
+    const checkoutNote = Shop.optionalBusinessText('checkout_note');
+    if (checkoutNote) { $('#co-checkout-note').textContent = checkoutNote; $('#co-checkout-note').hidden = false; }
 
     // prefill from last time
     const me = loadMe();
@@ -251,7 +255,7 @@
     try { o = JSON.parse(sessionStorage.getItem('lastOrder')); } catch { o = null; }
     if (o && o.order_no !== no) o = null;
     const box = $('#order');
-    const wa = Shop.waLink(t('ord.wa_msg', { no }));
+    const wa = Shop.waLink(Shop.businessText('whatsapp_order', 'ord.wa_msg', { no }));
     const waBtn = wa ? `<a class="btn btn-wa btn-block" href="${esc(wa)}" target="_blank" rel="noopener">${esc(t('ord.contact_whatsapp'))}</a>` : '';
     if (!no) { location.replace('index.html'); return; }
 
@@ -268,6 +272,7 @@
         <div class="ord-check" aria-hidden="true">✓</div>
         <h1>${esc(t('ord.thanks'))}</h1>
         <p class="muted">${esc(t('ord.your_number'))}</p>
+        ${Shop.optionalBusinessText('order_confirmation') ? `<p class="muted" dir="auto">${esc(Shop.optionalBusinessText('order_confirmation'))}</p>` : ''}
         <div class="ord-no" dir="ltr">${esc(no)}</div>
         <p class="muted">${esc(t('ord.keep_number'))}</p>
       </div>
@@ -319,7 +324,7 @@
       const cur = stepOf(data.status);
       const special = ['CANCELLED', 'RETURNED', 'FAILED_ATTEMPT'].includes(data.status);
       const idx = STEPS.indexOf(cur);
-      const wa = Shop.waLink(t('ord.wa_msg', { no: data.order_no }));
+      const wa = Shop.waLink(Shop.businessText('whatsapp_order', 'ord.wa_msg', { no: data.order_no }));
       out.innerHTML = `<section class="co-box trk-card">
           <p class="muted">${esc(t('ord.your_number'))} <strong dir="ltr">${esc(data.order_no)}</strong></p>
           <h2 class="trk-status">${esc(t('status.' + data.status))}</h2>
