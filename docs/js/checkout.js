@@ -119,14 +119,14 @@
     disSel.addEventListener('change', updateTotals);
 
     // payment methods: Whish / OMT only offered once their details are set in settings
-    const methods = [{ code: 'COD', info: t('co.cod_info') }];
+    const methods = [{ code: 'COD', info: Shop.businessText('cod_checkout', 'co.cod_info') }];
     if ((S.whish_number || '').trim()) methods.push({ code: 'WHISH', info: Shop.businessText('whish_checkout', 'co.whish_info', { number: S.whish_number.trim() }) });
     if ((S.omt_details || '').trim()) methods.push({ code: 'OMT', info: Shop.businessText('omt_checkout', 'co.omt_info', { details: S.omt_details.trim() }) });
     const hours = parseInt(S.unpaid_cancel_hours, 10);
     $('#co-payments').innerHTML = methods.map((m, i) => `
       <label class="pay-opt"><input type="radio" name="payment" value="${m.code}" ${i === 0 ? 'checked' : ''}>
         <span><strong>${esc(t('co.pay_' + m.code))}</strong>
-        <span class="pay-info" dir="auto">${esc(m.info)}${m.code !== 'COD' && hours > 0 ? ' ' + esc(t('co.pay_within', { hours })) : ''}</span></span>
+        <span class="pay-info" dir="auto">${esc(m.info)}${m.code !== 'COD' && hours > 0 ? ' ' + esc(Shop.businessText('pay_deadline', 'co.pay_within', { hours })) : ''}</span></span>
       </label>`).join('');
     const deliveryNote = Shop.optionalBusinessText('delivery_payment');
     if (deliveryNote) { $('#co-business-note').textContent = deliveryNote; $('#co-business-note').hidden = false; }
@@ -262,8 +262,8 @@
 
     let pay = '';
     if (o) {
-      const hours = o.unpaid_cancel_hours ? ' ' + t('co.pay_within', { hours: o.unpaid_cancel_hours }) : '';
-      if (o.payment_method === 'COD') pay = `<p>${esc(t('ord.pay_cod', { total: Shop.money(o.total) }))}</p>`;
+      const hours = o.unpaid_cancel_hours ? ' ' + Shop.businessText('pay_deadline', 'co.pay_within', { hours: o.unpaid_cancel_hours }) : '';
+      if (o.payment_method === 'COD') pay = `<p dir="auto">${esc(Shop.businessText('cod_confirm', 'ord.pay_cod', { total: Shop.money(o.total) }))}</p>`;
       if (o.payment_method === 'WHISH') pay = `<p dir="auto">${esc(Shop.businessText('whish_confirm', 'ord.pay_whish', { total: Shop.money(o.total), number: o.whish_number || '', no }))}${esc(hours)}</p>`;
       if (o.payment_method === 'OMT') pay = `<p dir="auto">${esc(Shop.businessText('omt_confirm', 'ord.pay_omt', { total: Shop.money(o.total), no }))}</p><p class="pay-info" dir="auto">${esc(o.omt_details || '')}</p><p>${esc(hours.trim())}</p>`;
     }

@@ -64,8 +64,10 @@
     { id: 'text_intro', fields: ['shop_intro_en', 'shop_intro_ar'] },
     { id: 'text_delivery', fields: ['delivery_payment_en', 'delivery_payment_ar', 'checkout_note_en', 'checkout_note_ar'] },
     { id: 'text_payment', fields: [
+      'cod_checkout_en', 'cod_checkout_ar', 'cod_confirm_en', 'cod_confirm_ar',
       'whish_checkout_en', 'whish_checkout_ar', 'whish_confirm_en', 'whish_confirm_ar',
       'omt_checkout_en', 'omt_checkout_ar', 'omt_confirm_en', 'omt_confirm_ar',
+      'pay_deadline_en', 'pay_deadline_ar',
     ] },
     { id: 'text_confirmation', fields: ['order_confirmation_en', 'order_confirmation_ar'] },
     { id: 'text_whatsapp', fields: [

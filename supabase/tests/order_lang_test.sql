@@ -100,6 +100,9 @@ reset role;
 select pg_temp.try('8 payment texts exist, all public, all empty',
   $q$select count(*)::text from public.settings where key in ('whish_checkout_en','whish_checkout_ar','whish_confirm_en','whish_confirm_ar',
     'omt_checkout_en','omt_checkout_ar','omt_confirm_en','omt_confirm_ar') and is_public and value = ''$q$, '8');
+select pg_temp.try('6 COD / deadline texts exist (migration 23), all public, all empty',
+  $q$select count(*)::text from public.settings where key in ('cod_checkout_en','cod_checkout_ar','cod_confirm_en','cod_confirm_ar',
+    'pay_deadline_en','pay_deadline_ar') and is_public and value = ''$q$, '6');
 set local role anon;
 select pg_temp.as_user(null);
 select pg_temp.try('visitor reads a payment text', $q$select count(*)::text from public.settings where key = 'whish_confirm_ar'$q$, '1');
@@ -109,6 +112,8 @@ select pg_temp.as_user('00000000-0000-4000-8000-0000000000d1');
 select pg_temp.try('ADMIN saves Whish text EN + AR',
   $q$select public.admin_save_settings('{"whish_confirm_en":"Send {total} to {number}, note {no}.","whish_confirm_ar":"حوّل {total} على {number}"}')::text$q$, '2');
 select pg_temp.try('... saved exactly', $q$select value from public.settings where key = 'whish_confirm_ar'$q$, 'حوّل {total} على {number}');
+select pg_temp.try('ADMIN saves COD + deadline texts',
+  $q$select public.admin_save_settings('{"cod_confirm_en":"Have {total} ready.","pay_deadline_ar":"ادفع خلال {hours} ساعة."}')::text$q$, '2');
 reset role;
 set local role authenticated;
 select pg_temp.as_user('00000000-0000-4000-8000-0000000000d2');
