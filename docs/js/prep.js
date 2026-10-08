@@ -249,13 +249,22 @@
     return template.replace(/\{(\w+)\}/g, (match, key) =>
       Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
   }
-  function statusWhatsAppUrl(o) {
+  // The status message goes out in the language the customer ordered in (orders.lang, since 8 Oct).
+  // Older orders have no language: the screen's language is used, and the screen says so.
+  async function statusWhatsApp(o) {
+    const known = o.lang === 'en' || o.lang === 'ar';
+    let lang = known ? o.lang : I18n.lang;
+    let tc = t;
+    try { tc = await I18n.translator(lang); } catch { lang = I18n.lang; } // offline: screen's language
     const track = new URL('../track.html', location.href);
     track.searchParams.set('no', o.order_no);
-    const values = { name: o.name, no: o.order_no, status: t('status.' + o.status), url: track.href };
-    const custom = String(S['whatsapp_status_' + I18n.lang] || '').trim();
-    const message = custom ? fillTemplate(custom, values) : t('ord.wa_status', values);
-    return 'https://wa.me/' + o.phone.replace(/\D/g, '') + '?text=' + encodeURIComponent(message);
+    const values = { name: o.name, no: o.order_no, status: tc('status.' + o.status), url: track.href };
+    const custom = String(S['whatsapp_status_' + lang] || '').trim();
+    const message = custom ? fillTemplate(custom, values) : tc('ord.wa_status', values);
+    return {
+      href: 'https://wa.me/' + o.phone.replace(/\D/g, '') + '?text=' + encodeURIComponent(message),
+      note: t(known && lang === o.lang ? 'prep.whatsapp_status_in' : 'prep.whatsapp_status_unknown', { lang: t('prep.lang_' + lang) }),
+    };
   }
 
   // ---------- list ----------
@@ -321,6 +330,7 @@
     const { data: o, error } = await DB.client.from('orders')
       .select('*, order_items(sku,name_en,name_ar,label,label_ar,qty,unit_price,line_total)').eq('id', id).single();
     if (error) { toast(errText(error), true); return; }
+    if (canEdit && o.status !== 'NEW') o._wa = await statusWhatsApp(o);
     state.current = o;
     render(o);
     if (!dlg.open) dlg.showModal();
@@ -345,8 +355,9 @@
           <a class="btn btn-small" href="tel:${esc(o.phone)}">📞 ${esc(t('prep.call'))}</a>
           <a class="btn btn-small" href="https://wa.me/${esc(digits)}" target="_blank" rel="noopener">💬 ${esc(t('prep.whatsapp'))}</a>
           ${o.location_url ? `<a class="btn btn-small" href="${esc(o.location_url)}" target="_blank" rel="noopener noreferrer">📍 ${esc(t('prep.map'))}</a>` : ''}
-          ${canEdit && o.status !== 'NEW' ? `<a class="btn btn-small" href="${esc(statusWhatsAppUrl(o))}" target="_blank" rel="noopener">${esc(t('prep.whatsapp_status'))}</a>` : ''}
+          ${o._wa ? `<a class="btn btn-small" href="${esc(o._wa.href)}" target="_blank" rel="noopener">${esc(t('prep.whatsapp_status'))}</a>` : ''}
         </div>
+        ${o._wa ? `<p class="hint" id="od-wa-lang">${esc(o._wa.note)}</p>` : ''}
         <p>${esc(o.town)}, ${esc(o.district)} (${esc(o.governorate)})<br>${esc(o.address)}${o.landmark ? `<br><span class="meta">${esc(o.landmark)}</span>` : ''}</p>
       </fieldset>
 
@@ -487,5 +498,16 @@
   // prep.html?open=123 (link from the New order screen): open that order straight away.
   const openId = Number(new URLSearchParams(location.search).get('open'));
   if (Number.isInteger(openId) && openId > 0) open(openId);
+  // A tapped phone notification (sw.js) when this screen is already open: show that order, but
+  // never on top of an order Mika has open (she may be typing a note); then a pop-up is enough.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      const m = event.data;
+      if (!m || m.type !== 'open-order' || !Number.isInteger(m.id) || m.id <= 0) return;
+      load();
+      if (dlg.open) toast(t('prep.new_order_tap'), false, 8000);
+      else open(m.id);
+    });
+  }
   window.Prep = { load, open, onChange, printSlip };
 })();

@@ -19,12 +19,13 @@
 
   let dict = {};
 
-  function t(key, vars) {
-    let s = key.split('.').reduce((o, k) => (o == null ? o : o[k]), dict);
+  function lookup(d, key, vars) {
+    let s = key.split('.').reduce((o, k) => (o == null ? o : o[k]), d);
     if (typeof s !== 'string') return key;
     if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m));
     return s;
   }
+  function t(key, vars) { return lookup(dict, key, vars); }
 
   function apply(root) {
     (root || document).querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
@@ -69,9 +70,20 @@
     return lang === 'ar' ? `${num} ${cur}` : `${cur} ${num}`;
   }
 
+  // Text in a language other than the page's (e.g. a WhatsApp message in the customer's language):
+  //   const tAr = await I18n.translator('ar');  tAr('status.PACKED')
+  const other = {};
+  function translator(l) {
+    if (!SUPPORTED.includes(l) || l === lang) return ready.then(() => t);
+    other[l] ||= fetch(new URL(l + '.json', base)).then((r) => r.json())
+      .then((d) => (key, vars) => lookup(d, key, vars))
+      .catch((e) => { delete other[l]; throw e; });
+    return other[l];
+  }
+
   window.I18n = {
     get lang() { return lang; },
-    ready, t, apply, pick, money, setLang,
+    ready, t, apply, pick, money, setLang, translator,
     toggle() { setLang(lang === 'ar' ? 'en' : 'ar'); },
   };
 })();

@@ -34,6 +34,9 @@ end $$;
 update public.settings set value = '76 000 000' where key = 'whish_number';
 update public.settings set value = 'OMT test details' where key = 'omt_details';
 update public.settings set value = '' where key = 'unpaid_cancel_hours';
+-- unpaid orders that already exist (e.g. TEST's 10053 / 10054 from 5 Oct) count as brand new here,
+-- so only this test's own orders can be cancelled (rolled back like everything else)
+update public.orders set created_at = now() where payment_status = 'AWAITING' and status in ('NEW', 'CONFIRMED', 'PACKED');
 insert into _v select 'box0', stock::text from public.products where sku = 'TEST-BOX-01';
 
 insert into _v select 'old_whish', pg_temp.place('WHISH', '[TEST] old whish')::text;

@@ -63,6 +63,10 @@
   const TEXT_GROUPS = [
     { id: 'text_intro', fields: ['shop_intro_en', 'shop_intro_ar'] },
     { id: 'text_delivery', fields: ['delivery_payment_en', 'delivery_payment_ar', 'checkout_note_en', 'checkout_note_ar'] },
+    { id: 'text_payment', fields: [
+      'whish_checkout_en', 'whish_checkout_ar', 'whish_confirm_en', 'whish_confirm_ar',
+      'omt_checkout_en', 'omt_checkout_ar', 'omt_confirm_en', 'omt_confirm_ar',
+    ] },
     { id: 'text_confirmation', fields: ['order_confirmation_en', 'order_confirmation_ar'] },
     { id: 'text_whatsapp', fields: [
       'whatsapp_ask_en', 'whatsapp_ask_ar', 'whatsapp_share_en', 'whatsapp_share_ar',

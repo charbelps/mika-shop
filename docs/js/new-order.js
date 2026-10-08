@@ -10,8 +10,11 @@
   const S = await DB.settings().catch(() => ({}));
   const money = (n) => `<bdi>${esc(I18n.money(n, S.currency))}</bdi>`;
   const DRAFT_KEY = 'staff:new-order:draft';
-  const FIELDS = ['phone', 'name', 'town', 'building', 'floor', 'street', 'landmark', 'location_url', 'notes'];
+  const FIELDS = ['phone', 'name', 'town', 'building', 'floor', 'street', 'landmark', 'location_url', 'notes', 'lang'];
   const form = $('#no-form');
+  // customer's language (WhatsApp status updates are sent in it): starts as the screen's language
+  form.lang.querySelector('option[value="' + (I18n.lang === 'ar' ? 'ar' : 'en') + '"]').defaultSelected = true;
+  form.lang.value = I18n.lang === 'ar' ? 'ar' : 'en';
   const err = $('#no-error');
   const state = { source: '', lines: [], req: 0 };
 
@@ -310,7 +313,7 @@
     const payload = {
       p_customer: {
         name: form.name.value.trim(), phone, zone_id: z.id, town: form.town.value.trim(), address,
-        landmark: form.landmark.value.trim(), location_url: loc,
+        landmark: form.landmark.value.trim(), location_url: loc, lang: form.lang.value,
       },
       p_items: state.lines.map((l) => ({ sku: l.sku, variant_id: l.variant_id || null, qty: l.qty })),
       p_payment: form.payment.value,

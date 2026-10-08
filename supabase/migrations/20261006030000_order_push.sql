@@ -2,7 +2,7 @@
 -- Mika Shop: migration 17, new-order alerts without Telegram (Phase 1c, A4; 12b #21).
 --  * push_subscriptions: one row per phone / computer that turned on order notifications
 --    (web push). Staff manage only their own devices, through two functions:
---      save_push_subscription(endpoint, p256dh, auth, user_agent, lang)
+--      save_push_subscription(endpoint, p256dh, auth, user_agent)
 --      remove_push_subscription(endpoint)
 --  * setting push_public_key (public, technical): the public half of the notification key.
 --    The private half is an Edge Function secret (VAPID_PRIVATE_KEY), never in the database.

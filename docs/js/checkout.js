@@ -120,8 +120,8 @@
 
     // payment methods: Whish / OMT only offered once their details are set in settings
     const methods = [{ code: 'COD', info: t('co.cod_info') }];
-    if ((S.whish_number || '').trim()) methods.push({ code: 'WHISH', info: t('co.whish_info', { number: S.whish_number.trim() }) });
-    if ((S.omt_details || '').trim()) methods.push({ code: 'OMT', info: t('co.omt_info', { details: S.omt_details.trim() }) });
+    if ((S.whish_number || '').trim()) methods.push({ code: 'WHISH', info: Shop.businessText('whish_checkout', 'co.whish_info', { number: S.whish_number.trim() }) });
+    if ((S.omt_details || '').trim()) methods.push({ code: 'OMT', info: Shop.businessText('omt_checkout', 'co.omt_info', { details: S.omt_details.trim() }) });
     const hours = parseInt(S.unpaid_cancel_hours, 10);
     $('#co-payments').innerHTML = methods.map((m, i) => `
       <label class="pay-opt"><input type="radio" name="payment" value="${m.code}" ${i === 0 ? 'checked' : ''}>
@@ -208,6 +208,7 @@
         p_customer: {
           name: form.name.value.trim(), phone, zone_id: z.id, town: form.town.value.trim(), address,
           landmark: form.landmark.value.trim(), location_url: loc,
+          lang: I18n.lang, // the WhatsApp status updates go out in this language
         },
         p_items: lines().map((l) => ({ sku: l.sku, variant_id: l.variant_id || null, qty: l.qty })),
         p_payment: form.payment.value,
@@ -263,8 +264,8 @@
     if (o) {
       const hours = o.unpaid_cancel_hours ? ' ' + t('co.pay_within', { hours: o.unpaid_cancel_hours }) : '';
       if (o.payment_method === 'COD') pay = `<p>${esc(t('ord.pay_cod', { total: Shop.money(o.total) }))}</p>`;
-      if (o.payment_method === 'WHISH') pay = `<p>${esc(t('ord.pay_whish', { total: Shop.money(o.total), number: o.whish_number || '', no }))}${esc(hours)}</p>`;
-      if (o.payment_method === 'OMT') pay = `<p>${esc(t('ord.pay_omt', { total: Shop.money(o.total), no }))}</p><p class="pay-info" dir="auto">${esc(o.omt_details || '')}</p><p>${esc(hours.trim())}</p>`;
+      if (o.payment_method === 'WHISH') pay = `<p dir="auto">${esc(Shop.businessText('whish_confirm', 'ord.pay_whish', { total: Shop.money(o.total), number: o.whish_number || '', no }))}${esc(hours)}</p>`;
+      if (o.payment_method === 'OMT') pay = `<p dir="auto">${esc(Shop.businessText('omt_confirm', 'ord.pay_omt', { total: Shop.money(o.total), no }))}</p><p class="pay-info" dir="auto">${esc(o.omt_details || '')}</p><p>${esc(hours.trim())}</p>`;
     }
     const itemName = (i) => (I18n.lang === 'ar' && i.name_ar ? i.name_ar : i.name_en) + ((I18n.lang === 'ar' && i.label_ar) || i.label ? ' · ' + ((I18n.lang === 'ar' && i.label_ar) || i.label) : '');
     box.innerHTML = `

@@ -48,17 +48,24 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil((async () => {
-    const scope = self.registration.scope;
-    let target = new URL(event.notification.data?.url || 'staff/prep.html', scope);
-    if (target.origin !== self.location.origin) target = new URL('staff/prep.html', scope);
-    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const client of windows) {
-      if (new URL(client.url).origin === target.origin) {
-        await client.navigate(target.href);
-        return client.focus();
-      }
-    }
-    return self.clients.openWindow(target.href);
-  })());
+  event.waitUntil(openFromNotification(event.notification.data?.url));
 });
+
+async function openFromNotification(url) {
+  const scope = self.registration.scope;
+  let target = new URL(url || 'staff/prep.html', scope);
+  if (target.origin !== self.location.origin || !target.href.startsWith(scope)) target = new URL('staff/prep.html', scope);
+  const orderId = Number(target.searchParams.get('open')) || null;
+  // An Orders screen of this shop is already open: bring it forward and let it show the order
+  // (it never leaves the page, so nothing typed there is lost). Other tabs are never touched.
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const orders = windows.find((client) => {
+    const u = new URL(client.url);
+    return u.href.startsWith(scope) && u.pathname.endsWith('/staff/prep.html');
+  });
+  if (orders) {
+    if (orderId) orders.postMessage({ type: 'open-order', id: orderId });
+    try { return await orders.focus(); } catch { /* some phones refuse focus: open a tab instead */ }
+  }
+  return self.clients.openWindow(target.href);
+}
