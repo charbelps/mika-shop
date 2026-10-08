@@ -264,6 +264,8 @@
   // Orders Mika entered herself (F7); website orders get no pill.
   const srcPill = (o) => (o.source && o.source !== 'WEBSITE' ? ` <span class="pill">${esc(t('prep.src_' + o.source))}</span>` : '');
   // First order from this phone number (advice #2): Mika can check it before packing.
+  // C1: "fee to be confirmed" order whose delivery fee Mika hasn't set yet
+  const feePill = (o) => (o.fee_tbc && !o.fee_set_at ? ` <span class="pill pill-warn" title="${esc(t('prep.fee_tbc_hint'))}">${esc(t('prep.fee_tbc'))}</span>` : '');
   const newPill = (o) => (o.is_first_order ? ` <span class="pill pill-warn" title="${esc(t('prep.new_customer_hint'))}">${esc(t('prep.new_customer'))}</span>` : '');
   function statusPill(s) {
     const cls = s === 'CANCELLED' || s === 'RETURNED' ? 'pill-off' : s === 'NEW' ? 'pill-danger' : s === 'PACKED' ? 'pill-ok' : '';
@@ -295,7 +297,7 @@
   async function load() {
     const reqId = ++state.req;
     let q = DB.client.from('orders')
-      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source,is_first_order', { count: 'exact' })
+      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source,is_first_order,fee_tbc,fee_set_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(state.page * PAGE, state.page * PAGE + PAGE - 1);
     if (state.tab === 'todo') q = q.in('status', ['NEW', 'CONFIRMED']);
@@ -328,7 +330,7 @@
       b.innerHTML = `<div class="body">
           <div class="title"><span dir="ltr">${esc(o.order_no)}</span> · ${esc(o.name)}</div>
           <div class="meta">${esc(when(o.created_at))} · ${esc(o.district)}</div>
-          <div>${statusPill(o.status)} ${payPill(o)}${srcPill(o)}${newPill(o)}</div>
+          <div>${statusPill(o.status)} ${payPill(o)}${srcPill(o)}${newPill(o)}${feePill(o)}</div>
         </div>
         <div class="end"><strong>${money(o.total)}</strong></div>`;
       b.addEventListener('click', () => open(o.id));
@@ -367,7 +369,7 @@
     const awaiting = o.payment_status === 'AWAITING' && !['CANCELLED', 'RETURNED'].includes(o.status);
     const done = ['CANCELLED', 'RETURNED'].includes(o.status);
     $('#od-body').innerHTML = `
-      <div class="od-pills">${statusPill(o.status)} ${payPill(o)}${srcPill(o)}${newPill(o)} ${canEdit ? '' : `<span class="pill">${esc(t('prep.readonly'))}</span>`}</div>
+      <div class="od-pills">${statusPill(o.status)} ${payPill(o)}${srcPill(o)}${newPill(o)}${feePill(o)} ${canEdit ? '' : `<span class="pill">${esc(t('prep.readonly'))}</span>`}</div>
       <p class="meta">${esc(when(o.created_at))}</p>
       ${o.is_first_order ? `<p class="hint">${esc(t('prep.new_customer_hint'))}</p>` : ''}
       ${o.cancel_reason ? `<div class="alert alert-warn">${esc(t('prep.cancelled_because', { reason: o.cancel_reason }))}</div>` : ''}
@@ -392,8 +394,13 @@
               <div class="meta" dir="ltr">${esc(i.sku)}</div></div>
             <div>${money(i.line_total)}</div></div>`).join('')}
         <div class="od-sum"><span>${esc(t('cart.subtotal'))}</span><span>${money(o.subtotal)}</span></div>
-        <div class="od-sum"><span>${esc(t('co.delivery'))}</span><span>${money(o.delivery_fee)}</span></div>
+        <div class="od-sum"><span>${esc(t('co.delivery'))}${o.fee_tbc && o.fee_set_at ? ` <span class="meta">(${esc(t('prep.fee_set_later'))})</span>` : ''}</span><span>${o.fee_tbc && !o.fee_set_at ? esc(t('co.fee_tbc')) : money(o.delivery_fee)}</span></div>
         <div class="od-sum total"><span>${esc(t('co.total'))}</span><strong>${money(o.total)}</strong></div>
+        ${canEdit && o.fee_tbc && !['DELIVERED', 'CANCELLED', 'RETURNED'].includes(o.status) ? `<div class="field" style="margin-top:.6rem">
+          <label for="od-fee">${esc(t(o.fee_set_at ? 'prep.fee_change' : 'prep.fee_set'))}</label>
+          <div class="input-with-btn"><input id="od-fee" type="text" inputmode="decimal" dir="ltr" maxlength="8" value="${o.fee_set_at ? esc(o.delivery_fee) : ''}" placeholder="0.00">
+          <button type="button" class="btn btn-primary" id="od-fee-save">${esc(t('prep.fee_save'))}</button></div>
+          <p class="hint">${esc(t(o.payment_method === 'COD' ? 'prep.fee_help_cod' : 'prep.fee_help_paid'))}</p></div>` : ''}
       </fieldset>
 
       <fieldset><legend>${esc(t('prep.payment'))}</legend>
@@ -430,6 +437,13 @@
       if (b.dataset.status === 'PACKED' && o.payment_status === 'AWAITING' && !confirm(t('prep.pack_unpaid'))) return;
       act(() => DB.client.rpc('staff_set_status', { p_order_id: o.id, p_status: b.dataset.status }));
     }));
+    const feeSave = $('#od-fee-save', body);
+    if (feeSave) feeSave.addEventListener('click', () => {
+      const raw = $('#od-fee').value.trim().replace(',', '.');
+      const fee = Number(raw);
+      if (!raw || !/^\d{1,4}(\.\d{1,2})?$/.test(raw) || Number.isNaN(fee)) { toast(t('prep.err_BAD_FEE'), true); $('#od-fee').focus(); return; }
+      act(() => DB.client.rpc('staff_set_delivery_fee', { p_order_id: o.id, p_fee: fee }));
+    });
     const cancelBtn = $('#od-cancel', body);
     if (cancelBtn) cancelBtn.addEventListener('click', () => openCancel(o));
     $('#od-print', body).addEventListener('click', () => printSlip(o));
@@ -473,8 +487,14 @@
   // ---------- packing slip (bilingual, print.css shows only .slip) ----------
   function printSlip(o) {
     const slip = $('#slip');
-    const collect = o.payment_status !== 'PAID';
+    const c = DB.amountToCollect(o);
+    const collect = c.kind !== 'paid';
     const amount = I18n.money(o.total, S.currency);
+    const collectHtml = c.kind === 'total'
+      ? `${esc(t('prep.slip_collect'))}<div class="slip-amount"><bdi>${esc(I18n.money(c.amount, S.currency))}</bdi></div>${c.feePending ? `<div>${esc(t('prep.slip_fee_tbc'))}</div>` : ''}`
+      : c.kind === 'fee'
+        ? `${esc(t('prep.slip_items_paid'))}<br>${esc(t('prep.slip_collect_fee'))}<div class="slip-amount">${c.amount == null ? esc(t('prep.slip_fee_tbc_amount')) : `<bdi>${esc(I18n.money(c.amount, S.currency))}</bdi>`}</div>`
+        : esc(t('prep.slip_paid'));
     const shop = [S.shop_name_en, S.shop_name_ar].filter(Boolean).join(' · ');
     slip.innerHTML = `
       <div class="slip-head"><div class="slip-shop">${esc(shop)}</div>
@@ -492,9 +512,7 @@
           <div class="slip-sku" dir="ltr">${esc(i.sku)}</div></td><td class="slip-qty">${i.qty}</td></tr>`).join('')}
       </tbody></table>
       <div class="slip-total"><span>${esc(t('prep.slip_total'))}</span> <bdi>${esc(amount)}</bdi></div>
-      <div class="slip-collect ${collect ? '' : 'paid'}">${collect
-        ? `${esc(t('prep.slip_collect'))}<div class="slip-amount"><bdi>${esc(amount)}</bdi></div>`
-        : esc(t('prep.slip_paid'))}</div>`;
+      <div class="slip-collect ${collect ? '' : 'paid'}">${collectHtml}</div>`;
     window.print();
   }
 

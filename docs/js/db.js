@@ -50,6 +50,23 @@
       return /^\d{7,8}$/.test(s) ? '+961' + s : null;
     },
 
+    // What to collect on delivery (CLAUDE.md section 7), shared by the slip and the packing tab:
+    //   { kind: 'total', amount }  not paid: collect the total
+    //   { kind: 'fee', amount }    paid by Whish / OMT, but its delivery fee was set afterwards
+    //                              (C1, 12b #2: the transfer paid the items); amount null = not set yet
+    //   { kind: 'paid' }           paid: collect nothing
+    // feePending: a "fee to be confirmed" order whose fee Mika hasn't set yet.
+    amountToCollect(o) {
+      const feePending = !!o.fee_tbc && !o.fee_set_at;
+      if (o.payment_status === 'PAID') {
+        if (o.fee_tbc && (feePending || Number(o.delivery_fee) > 0)) {
+          return { kind: 'fee', amount: feePending ? null : Number(o.delivery_fee), feePending };
+        }
+        return { kind: 'paid', amount: 0, feePending };
+      }
+      return { kind: 'total', amount: Number(o.total), feePending };
+    },
+
     // Settings the current user may read, as { key: value }. Cached per page load.
     settings() {
       settingsPromise ||= client.from('settings').select('key,value').then(({ data, error }) => {

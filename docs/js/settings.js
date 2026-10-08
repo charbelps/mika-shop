@@ -53,7 +53,8 @@
     { id: 'pay', fields: [
       { key: 'whish_number', dir: 'ltr' }, { key: 'omt_details', area: true, dir: 'auto' },
       { key: 'unpaid_cancel_hours', type: 'number' }] },
-    { id: 'orders', fields: [{ key: 'order_prefix', dir: 'ltr', max: 6 }, { key: 'low_stock_threshold', type: 'number' }] },
+    { id: 'orders', fields: [{ key: 'order_prefix', dir: 'ltr', max: 6 }, { key: 'low_stock_threshold', type: 'number' },
+      { key: 'fee_tbc_enabled', options: ['', 'on'] }] },
     { id: 'policies', fields: [
       { key: 'return_policy_en', area: true }, { key: 'return_policy_ar', area: true, dir: 'rtl' },
       { key: 'privacy_en', area: true }, { key: 'privacy_ar', area: true, dir: 'rtl' }] },
@@ -92,10 +93,12 @@
         ${g.fields.map((f) => {
           const id = 'set-' + f.key;
           const attrs = `id="${id}" name="${f.key}" ${f.dir ? `dir="${f.dir}"` : ''} ${f.max ? `maxlength="${f.max}"` : ''} ${canEdit ? '' : 'readonly'}`;
-          const input = f.area
+          const input = f.options
+            ? `<select ${attrs} ${canEdit ? '' : 'disabled'}>${f.options.map((o) => `<option value="${o}" ${(saved[f.key] || '') === o ? 'selected' : ''}>${esc(t('set.opt_' + f.key + '_' + (o || 'off')))}</option>`).join('')}</select>`
+            : f.area
             ? `<textarea ${attrs} maxlength="5000">${esc(saved[f.key])}</textarea>`
             : `<input ${attrs} type="${f.type === 'number' ? 'text' : f.type || 'text'}" ${f.type === 'number' ? 'inputmode="numeric"' : ''} value="${esc(saved[f.key])}">`;
-          const empty = !(saved[f.key] || '').trim();
+          const empty = !f.options && !(saved[f.key] || '').trim();
           return `<div class="field">
             <label for="${id}">${esc(t('set.f_' + f.key))} ${empty ? `<span class="pill pill-warn">${esc(t('set.empty'))}</span>` : ''}</label>
             ${input}
@@ -103,7 +106,7 @@
         }).join('')}
       </fieldset>`).join('');
     $('#set-save').hidden = !canEdit;
-    $('#set-groups').querySelectorAll('input, textarea').forEach((el) => el.addEventListener('input', markDirty));
+    $('#set-groups').querySelectorAll('input, textarea, select').forEach((el) => el.addEventListener('input', markDirty));
     markDirty();
   }
 

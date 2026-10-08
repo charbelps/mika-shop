@@ -82,6 +82,9 @@
     await Shop.boot();
     Shop.setTitle(t('co.title'));
     const S = Shop.settings();
+    // C1 emergency switch (Settings, default off): areas without a fee can still order,
+    // the fee shows as "to be confirmed" and is paid in cash on delivery (12b #2)
+    const feeTbc = (S.fee_tbc_enabled || '') === 'on';
     const form = $('#co-form');
     const err = $('#co-error');
 
@@ -163,6 +166,9 @@
       let fee = null;
       if (!z) {
         feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="muted">${esc(t('co.choose_area'))}</span>`;
+      } else if (z.fee == null && feeTbc) {
+        fee = 0;
+        feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="muted">${esc(t('co.fee_tbc'))}</span>`;
       } else if (z.fee == null) {
         feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="bad">${esc(t('co.no_delivery'))}</span>`;
       } else {
@@ -172,7 +178,8 @@
       }
       $('#co-subtotal').innerHTML = moneyHtml(subtotal);
       $('#co-total').innerHTML = fee == null ? '—' : moneyHtml(subtotal + fee);
-      submit.disabled = !!z && z.fee == null;
+      $('#co-fee-note').hidden = !(z && z.fee == null && feeTbc);
+      submit.disabled = !!z && z.fee == null && !feeTbc;
     }
     updateTotals();
 
@@ -197,7 +204,7 @@
         form[need[0]] && form[need[0]].focus();
         return;
       }
-      if (z.fee == null) { err.textContent = t('co.no_delivery'); err.hidden = false; return; }
+      if (z.fee == null && !feeTbc) { err.textContent = t('co.no_delivery'); err.hidden = false; return; }
 
       const address = [
         form.building.value.trim() && 'Bldg: ' + form.building.value.trim(),
@@ -286,8 +293,9 @@
         <h2>${esc(t('co.summary'))}</h2>
         ${(o.items || []).map((i) => `<div class="sum-row"><span>${i.qty} × ${esc(itemName(i))}</span><span>${moneyHtml(i.line_total)}</span></div>`).join('')}
         <div class="sum-row sep"><span>${esc(t('cart.subtotal'))}</span><span>${moneyHtml(o.subtotal)}</span></div>
-        <div class="sum-row"><span>${esc(t('co.delivery'))}${o.eta_days ? ` <span class="muted">(${esc(t('co.eta', { days: o.eta_days }))})</span>` : ''}</span><span>${Number(o.delivery_fee) === 0 ? esc(t('co.free')) : moneyHtml(o.delivery_fee)}</span></div>
+        <div class="sum-row"><span>${esc(t('co.delivery'))}${o.eta_days ? ` <span class="muted">(${esc(t('co.eta', { days: o.eta_days }))})</span>` : ''}</span><span>${o.fee_to_confirm ? esc(t('co.fee_tbc')) : Number(o.delivery_fee) === 0 ? esc(t('co.free')) : moneyHtml(o.delivery_fee)}</span></div>
         <div class="sum-row total"><span>${esc(t('co.total'))}</span><strong>${moneyHtml(o.total)}</strong></div>
+        ${o.fee_to_confirm ? `<p class="hint">${esc(t('co.fee_tbc_note'))}</p>` : ''}
       </section>
       <p>${esc(t('ord.next_steps'))}</p>` : `<p>${esc(t('ord.no_details'))}</p>`}
       <div class="buy"><a class="btn btn-primary btn-block" href="track.html?no=${encodeURIComponent(no)}">${esc(t('trk.title'))}</a>${waBtn}<a class="btn btn-block" href="index.html">${esc(t('cart.continue'))}</a></div>`;

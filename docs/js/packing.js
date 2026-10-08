@@ -49,7 +49,7 @@
   async function load() {
     const my = ++req;
     const { data, error } = await DB.client.from('orders')
-      .select('id,order_no,created_at,name,town,district,total,payment_method,payment_status,status,source,is_first_order,notes,' +
+      .select('id,order_no,created_at,name,town,district,total,delivery_fee,payment_method,payment_status,status,source,is_first_order,notes,fee_tbc,fee_set_at,' +
               'order_items(id,sku,variant_id,name_en,name_ar,label,label_ar,qty,picked,checked)')
       .in('status', ['NEW', 'CONFIRMED'])
       .or('payment_method.eq.COD,payment_status.eq.PAID')
@@ -111,7 +111,7 @@
     $('#pk-cards').innerHTML = !orders.length ? empty : orders.map((o) => {
       const done = o.order_items.filter((i) => i.checked).length;
       const n = o.order_items.length;
-      const paid = o.payment_status === 'PAID';
+      const c = DB.amountToCollect(o);
       return `<article class="pk-card${done === n ? ' all-done' : ''}" data-order="${o.id}">
         <header class="pk-card-head">
           <div>
@@ -119,9 +119,12 @@
             <p class="pk-who" dir="auto">${esc(o.name)}</p>
             <p class="hint">${esc(o.town)}, ${esc(o.district)} · ${esc(when(o.created_at))}</p>
           </div>
-          <div class="pk-pay ${paid ? 'paid' : 'collect'}">${paid ? esc(t('pk.paid')) : `${esc(t('pk.collect'))} ${money(o.total)}`}</div>
+          <div class="pk-pay ${c.kind === 'paid' ? 'paid' : 'collect'}">${c.kind === 'paid' ? esc(t('pk.paid'))
+            : c.kind === 'fee' ? `${esc(t('pk.items_paid'))}<br>${esc(t('pk.collect_fee'))} ${c.amount == null ? esc(t('pk.fee_tbc_short')) : money(c.amount)}`
+            : `${esc(t('pk.collect'))} ${money(c.amount)}${c.feePending ? `<br><small>${esc(t('pk.plus_fee_tbc'))}</small>` : ''}`}</div>
         </header>
         <div class="od-pills">
+          ${o.fee_tbc && !o.fee_set_at ? `<span class="pill pill-warn" title="${esc(t('prep.fee_tbc_hint'))}">${esc(t('prep.fee_tbc'))}</span>` : ''}
           ${o.is_first_order ? `<span class="pill pill-warn" title="${esc(t('prep.new_customer_hint'))}">${esc(t('prep.new_customer'))}</span>` : ''}
           ${o.source && o.source !== 'WEBSITE' ? `<span class="pill">${esc(t('prep.src_' + o.source))}</span>` : ''}
           <span class="pill">${esc(t('status.' + o.status))}</span>

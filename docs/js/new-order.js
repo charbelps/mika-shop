@@ -8,6 +8,8 @@
   const t = I18n.t;
   const $ = (s, root = document) => root.querySelector(s);
   const S = await DB.settings().catch(() => ({}));
+  // C1 emergency switch: areas without a fee can still be ordered, fee "to be confirmed"
+  const feeTbc = (S.fee_tbc_enabled || '') === 'on';
   const money = (n) => `<bdi>${esc(I18n.money(n, S.currency))}</bdi>`;
   const DRAFT_KEY = 'staff:new-order:draft';
   const FIELDS = ['phone', 'name', 'town', 'building', 'floor', 'street', 'landmark', 'location_url', 'notes', 'lang'];
@@ -230,6 +232,7 @@
     let fee = null;
     const feeRow = $('#no-fee');
     if (!z) feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="hint" style="margin:0">${esc(t('co.choose_area'))}</span>`;
+    else if (z.fee == null && feeTbc) { fee = 0; feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="hint" style="margin:0">${esc(t('co.fee_tbc'))}</span>`; }
     else if (z.fee == null) feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="bad">${esc(t('no.no_fee'))}</span>`;
     else {
       fee = Number(z.fee);
@@ -303,7 +306,7 @@
       err.scrollIntoView({ block: 'center' });
       return;
     }
-    if (z.fee == null) { err.textContent = t('no.err_ZONE_FEE_NOT_SET'); err.hidden = false; return; }
+    if (z.fee == null && !feeTbc) { err.textContent = t('no.err_ZONE_FEE_NOT_SET'); err.hidden = false; return; }
 
     const address = [
       form.building.value.trim() && 'Bldg: ' + form.building.value.trim(),
