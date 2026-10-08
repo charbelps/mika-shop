@@ -82,7 +82,10 @@
   async function initPush() {
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
       pushButton.disabled = true;
-      pushMessage('prep.push_unsupported');
+      // iPhone / iPad: notifications only work from the Home Screen app (iOS 16.4 or newer)
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      pushMessage(ios && !standalone ? 'prep.push_ios_home' : 'prep.push_unsupported');
       return;
     }
     if (settingsError) {
@@ -190,25 +193,46 @@
     }
   });
 
-  $('#sound-enable').addEventListener('click', async (event) => {
-    const button = event.currentTarget;
+  // The sound choice is remembered on this device. Browsers only allow sound after a tap, so on
+  // the next visit the first tap anywhere on the screen switches it back on.
+  const SOUND_KEY = 'staff:orders:sound';
+  const rememberSound = (on) => { try { localStorage.setItem(SOUND_KEY, on ? '1' : '0'); } catch { /* storage blocked */ } };
+  async function startSound(beep) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) throw new Error(t('prep.sound_unsupported'));
+    audioContext ||= new AudioContextClass();
+    await audioContext.resume();
+    soundEnabled = true;
+    soundButton.textContent = t('prep.sound_disable');
+    if (beep) playAlertSound();
+  }
+  soundButton.addEventListener('click', async () => {
     if (soundEnabled) {
       soundEnabled = false;
-      button.textContent = t('prep.sound_enable');
+      rememberSound(false);
+      soundButton.textContent = t('prep.sound_enable');
       return;
     }
     try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) throw new Error(t('prep.sound_unsupported'));
-      audioContext ||= new AudioContextClass();
-      await audioContext.resume();
-      soundEnabled = true;
-      button.textContent = t('prep.sound_disable');
-      playAlertSound();
+      await startSound(true);
+      rememberSound(true);
     } catch (error) {
       toast(errText(error), true);
     }
   });
+  let soundWanted = false;
+  try { soundWanted = localStorage.getItem(SOUND_KEY) === '1'; } catch { /* storage blocked */ }
+  if (soundWanted && !soundButton.disabled) {
+    soundButton.textContent = t('prep.sound_tap_to_resume');
+    const resume = (event) => {
+      if (event.target.closest && event.target.closest('#sound-enable')) return; // the button handles itself
+      document.removeEventListener('pointerdown', resume, true);
+      document.removeEventListener('keydown', resume, true);
+      if (!soundEnabled) startSound(false).catch(() => { soundButton.textContent = t('prep.sound_enable'); });
+    };
+    document.addEventListener('pointerdown', resume, true);
+    document.addEventListener('keydown', resume, true);
+  }
 
   function playAlertSound() {
     if (!soundEnabled || !audioContext) return;

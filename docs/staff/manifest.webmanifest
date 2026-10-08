@@ -1,0 +1,15 @@
+{
+  "name": "Shop staff · Orders",
+  "short_name": "Orders",
+  "description": "Orders, packing and new-order notifications for the shop staff.",
+  "start_url": "prep.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf6ec",
+  "theme_color": "#2f3d22",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

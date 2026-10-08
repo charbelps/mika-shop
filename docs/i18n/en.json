@@ -328,6 +328,8 @@
     "sound_enable": "Enable sound",
     "sound_disable": "Turn sound off",
     "sound_unsupported": "Sound alerts aren't supported by this browser.",
+    "sound_tap_to_resume": "Sound: tap anywhere to switch it back on",
+    "push_ios_home": "On iPhone: open this page in Safari, tap Share → \"Add to Home Screen\", then open Orders from the new icon and turn on notifications there (iOS 16.4 or newer).",
     "push_enable": "Turn on phone notifications",
     "push_disable": "Turn off this device",
     "push_enabled": "Phone notifications are on for this device.",
