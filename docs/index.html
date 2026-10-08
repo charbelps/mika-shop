@@ -15,13 +15,19 @@
 </head>
 <body>
   <header id="site-header"></header>
-  <main class="wrap">
-    <p class="home-intro" id="home-intro" dir="auto" hidden></p>
-    <section class="section">
+  <main class="wrap home-page">
+    <section class="home-hero" aria-labelledby="home-title">
+      <div class="home-hero-copy">
+        <h1 id="home-title" data-shop-name></h1>
+        <p class="home-intro" id="home-intro" dir="auto" hidden></p>
+      </div>
+      <a class="btn btn-primary home-cta" href="category.html" data-i18n="shop.all_products"></a>
+    </section>
+    <section class="section home-categories">
       <h2 data-i18n="shop.categories"></h2>
       <div class="cat-grid" id="home-categories"></div>
     </section>
-    <section class="section">
+    <section class="section home-featured">
       <div class="section-head">
         <h2 id="home-featured-title"></h2>
         <a href="category.html" data-i18n="shop.see_all"></a>
