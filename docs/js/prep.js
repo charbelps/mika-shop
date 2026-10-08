@@ -31,7 +31,7 @@
     const k = 'prep.err_' + code;
     return t(k) !== k ? t(k) : t('common.error_generic') + ' (' + ((error && error.message) || '') + ')';
   }
-  const when = (iso) => new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB' : 'en-GB',
+  const when = (iso) => new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB',
     { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
   // ---------- new-order alerts ----------

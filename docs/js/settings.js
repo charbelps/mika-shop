@@ -398,7 +398,7 @@
     const { data, error } = await staffCall({ action: 'list' });
     if (error) { box.innerHTML = `<div class="alert alert-error">${esc(stErr(error))}</div>`; staffLoaded = false; return; }
     staffMe = data.me;
-    const when = (iso) => (iso ? new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : t('st.never'));
+    const when = (iso) => (iso ? new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : t('st.never'));
     box.innerHTML = data.staff.length ? '' : `<p class="empty">${esc(t('st.none'))}</p>`;
     data.staff.forEach((s) => {
       const isMe = s.user_id === staffMe;

@@ -306,7 +306,7 @@
 
     const STEPS = ['NEW', 'CONFIRMED', 'PACKED', 'ON_THE_WAY', 'DELIVERED'];
     const stepOf = (s) => (s === 'OUT_FOR_DELIVERY' || s === 'WITH_COMPANY' ? 'ON_THE_WAY' : s);
-    const fmt = (iso) => new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB' : 'en-GB',
+    const fmt = (iso) => new Date(iso).toLocaleString(I18n.lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB',
       { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
     async function run() {

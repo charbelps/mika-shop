@@ -41,7 +41,8 @@
     "nav_delivery": "Delivery",
     "not_built": "This screen will be added in a later step.",
     "nav_new_order": "New order",
-    "nav_settings": "Settings"
+    "nav_settings": "Settings",
+    "nav_packing": "Packing"
   },
   "admin": {
     "new_product": "New product",
@@ -300,6 +301,26 @@
     "pay_UNPAID": "Pay on delivery",
     "pay_AWAITING": "Waiting for payment",
     "pay_PAID": "Paid"
+  },
+  "pk": {
+    "title": "Packing",
+    "intro": "Orders ready to pack: cash on delivery, or already paid. Orders waiting for a Whish / OMT payment stay on the Orders screen until you confirm the payment.",
+    "read_only": "You can see the packing here; only an admin can tick items or mark orders as packed.",
+    "view_pick": "Pick list",
+    "view_cards": "Order cards",
+    "pick_help": "Everything to take from the shelves, added up over all orders below. Tick a line once you have it.",
+    "in_one_order": "in 1 order",
+    "in_orders": "in {n} orders",
+    "picked_of": "{n} of {total} picked",
+    "tick_picked": "Taken from the shelf: {name}",
+    "tick_checked": "In the box: {name}",
+    "checked_of": "{n} of {total} in the box",
+    "paid": "PAID: don't collect",
+    "collect": "COLLECT",
+    "details": "Details / slip",
+    "packed": "Packed",
+    "packed_toast": "Order {no} is packed.",
+    "empty": "Everything is packed. New orders appear here by themselves."
   },
   "prep": {
     "alerts_title": "New-order alerts",

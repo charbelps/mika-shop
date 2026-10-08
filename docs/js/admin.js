@@ -398,7 +398,7 @@
     const vName = (id) => { const v = ed.variants.find((x) => x.id === id); return v ? ' · ' + (I18n.lang === 'ar' && v.label_ar ? v.label_ar : v.label_en) : ''; };
     box.innerHTML = rows.map((r) => `<div class="row-item" style="min-height:auto">
         <div class="body"><div>${esc(t('admin.reason_' + r.reason))}${esc(vName(r.variant_id))}</div>
-        <div class="meta">${esc(new Date(r.created_at).toLocaleString(I18n.lang === 'ar' ? 'ar-LB' : 'en-GB'))}</div></div>
+        <div class="meta">${esc(new Date(r.created_at).toLocaleString(I18n.lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB'))}</div></div>
         <div class="end"><strong dir="ltr">${r.change > 0 ? '+' : ''}${r.change}</strong><div class="meta">→ ${r.stock_after == null ? '' : r.stock_after}</div></div>
       </div>`).join('');
   }

@@ -1,0 +1,86 @@
+/* Packing tab (P1). First staff screen in the chosen design, theme C "Linen Studio" (8 Oct):
+   body.theme-linen swaps the staff.css tokens, so the whole page (header, nav included) uses it.
+   The other staff screens move to these tokens later, in staff.css itself.
+   Big tap targets and text: Mika packs with the phone in one hand. */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Figtree:wght@400;500;600;700;800&family=Noto+Naskh+Arabic:wght@500;700&display=swap');
+
+body.theme-linen {
+  --bg: #faf6ec;
+  --surface: #ffffff;
+  --text: #22261a;
+  --muted: #5e634c;
+  --line: #e0d8c1;
+  --brand: #2f3d22;
+  --brand-ink: #faf6ec;
+  --brand-soft: #efeadb;
+  --accent: #bc5b38;
+  --accent-soft: #f5e2d6;
+  --danger: #9b3320;
+  --danger-soft: #f8ded4;
+  --warn: #7c5110;
+  --warn-soft: #f8ebc8;
+  --ok: #33592a;
+  --ok-soft: #e4edd3;
+  --radius: 10px;
+  --font: 'Figtree', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'DM Serif Display', 'Noto Naskh Arabic', Georgia, serif;
+}
+html[lang=ar] body.theme-linen { --font: 'IBM Plex Sans Arabic', system-ui, sans-serif; }
+body.theme-linen h1, body.theme-linen h2 { font-family: var(--font-display); font-weight: 400; color: var(--brand); }
+
+/* ---------- head + view switch ---------- */
+.pk-head h1 { flex: 1; margin: 0; font-size: 1.8rem; }
+.pk-views { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-block: .75rem 1rem;
+            background: var(--brand-soft); border-radius: 12px; max-width: 520px; }
+.pk-view { min-height: 46px; border: 0; border-radius: 9px; background: transparent; color: var(--text);
+           font: inherit; font-weight: 600; cursor: pointer; }
+.pk-view[aria-selected=true] { background: var(--surface); color: var(--brand); box-shadow: 0 1px 4px rgba(34, 38, 26, .12); }
+.pk-count { color: var(--muted); font-weight: 500; }
+.pk-readonly { background: var(--warn-soft); color: var(--warn); padding: .55rem .75rem; border-radius: var(--radius); }
+
+/* ---------- rows with a big tick ---------- */
+.pk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.pk-pick .pk-list { max-width: 760px; }
+.pk-tick { width: 100%; min-height: 60px; display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: .85rem;
+           padding: .7rem .85rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+           color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.pk-tick:disabled { cursor: default; }
+.pk-tick:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pk-box { width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid var(--brand); border-radius: 9px;
+          font-size: 1.2rem; font-weight: 800; color: var(--brand-ink); }
+.pk-tick[aria-checked=true] .pk-box { background: var(--brand); }
+.pk-tick:disabled .pk-box { border-color: var(--line); }
+.pk-tick:disabled[aria-checked=true] .pk-box { background: var(--muted); }
+.pk-qty { min-width: 3ch; font-size: 1.45rem; font-weight: 800; color: var(--brand); }
+.pk-what { min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
+.pk-name { font-size: 1.08rem; font-weight: 600; overflow-wrap: anywhere; }
+.pk-label { color: var(--text); font-size: .98rem; }
+.pk-meta { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.pk-row.done .pk-tick { background: var(--ok-soft); border-color: #cddcb6; }
+.pk-row.done .pk-name { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--muted); }
+
+/* ---------- order cards ---------- */
+.pk-cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); align-items: start; }
+.pk-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1rem;
+           display: flex; flex-direction: column; gap: .75rem; }
+.pk-card.all-done { border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
+.pk-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; }
+.pk-card-head h2 { margin: 0; font-size: 1.7rem; }
+.pk-card-head p { margin: .1rem 0 0; }
+.pk-who { font-weight: 600; font-size: 1.05rem; }
+.pk-pay { flex: none; max-width: 50%; padding: .45rem .7rem; border-radius: 10px; font-weight: 800; text-align: center; line-height: 1.25; }
+.pk-pay.collect { background: var(--warn-soft); color: var(--warn); font-size: 1.1rem; }
+.pk-pay.paid { background: var(--ok-soft); color: var(--ok); font-size: .95rem; }
+.pk-card .od-pills { display: flex; flex-wrap: wrap; gap: .35rem; }
+.pk-notes { margin: 0; padding: .55rem .75rem; border-radius: var(--radius); background: var(--warn-soft); white-space: pre-line; }
+.pk-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; border-block-start: 1px solid var(--line); padding-block-start: .75rem; }
+.pk-progress { flex: 1 1 100%; color: var(--muted); font-size: .92rem; }
+.pk-card-foot .btn { min-height: 48px; display: inline-flex; align-items: center; }
+.pk-packed { flex: 1 1 auto; justify-content: center; font-size: 1.05rem; }
+
+/* ---------- nothing to pack ---------- */
+.pk-empty { text-align: center; color: var(--muted); padding: 2.5rem 1rem; border: 1px dashed var(--line); border-radius: 16px; background: var(--surface); }
+.pk-empty span { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 50%;
+                 background: var(--ok-soft); color: var(--ok); font-size: 1.6rem; font-weight: 800; }
+.pk-empty p { margin: .75rem 0 0; font-size: 1.05rem; }
