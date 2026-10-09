@@ -139,7 +139,9 @@ select set_config('request.jwt.claims', pg_temp.claims('00000000-0000-4000-8000-
 select pg_temp.try('driver', 'read orders (only own)',   $q$select 1 from public.orders where order_no like 'RLSTEST-%'$q$, 'rows:1');
 select pg_temp.try('driver', 'read items (only own)',    $q$select 1 from public.order_items where sku = 'RLSTEST'$q$, 'rows:1');
 select pg_temp.try('driver', 'read customers',           'select 1 from public.customers', 'rows:0');
-select pg_temp.try('driver', 'update own status/cash',   $q$update public.orders set status = 'DELIVERED', cash_collected = 12, notes = 'ok' where order_no = 'RLSTEST-1'$q$, 'rows:1');
+-- since migration 28 status / cash go through driver_delivery (valid moves only); notes stay direct
+select pg_temp.try('driver', 'update own status/cash directly', $q$update public.orders set status = 'DELIVERED', cash_collected = 12 where order_no = 'RLSTEST-1'$q$, 'error:42501');
+select pg_temp.try('driver', 'update own notes',         $q$update public.orders set notes = 'ok' where order_no = 'RLSTEST-1'$q$, 'rows:1');
 select pg_temp.try('driver', 'change own order total',   $q$update public.orders set total = 0 where order_no = 'RLSTEST-1'$q$, 'error:42501');
 select pg_temp.try('driver', 'reassign own order',       $q$update public.orders set driver_id = null where order_no = 'RLSTEST-1'$q$, 'error:42501');
 select pg_temp.try('driver', 'update other order',       $q$update public.orders set status = 'DELIVERED' where order_no = 'RLSTEST-2'$q$, 'rows:0');

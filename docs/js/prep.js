@@ -9,6 +9,9 @@
   let settingsError = null;
   const S = await DB.settings().catch((error) => { settingsError = error; return {}; });
   const money = (n) => `<bdi>${esc(I18n.money(n, S.currency))}</bdi>`;
+  // staff names (drivers for "Delivered by"); empty if it can't be read
+  const staffList = await DB.client.rpc('staff_directory').then(({ data }) => data || [], () => []);
+  const staffName = (id) => (staffList.find((s) => s.user_id === id) || {}).name || '';
   const PAGE = 30;
   const state = { tab: 'todo', q: '', page: 0, req: 0, current: null };
 
@@ -270,9 +273,13 @@
   // F6: delivered to someone else, paid by Whish / OMT
   const giftPill = (o) => (o.is_gift ? ` <span class="pill pill-gift">${esc(t('prep.gift'))}</span>` : '');
   function statusPill(s) {
-    const cls = s === 'CANCELLED' || s === 'RETURNED' ? 'pill-off' : s === 'NEW' ? 'pill-danger' : s === 'PACKED' ? 'pill-ok' : '';
+    const cls = s === 'CANCELLED' || s === 'RETURNED' ? 'pill-off' : s === 'NEW' || s === 'FAILED_ATTEMPT' ? 'pill-danger'
+      : s === 'PACKED' || s === 'DELIVERED' ? 'pill-ok' : '';
     return `<span class="pill ${cls}">${esc(t('status.' + s))}</span>`;
   }
+  // who takes it, once it is packed / on the way
+  const deliveryPill = (o) => (['PACKED', 'OUT_FOR_DELIVERY', 'WITH_COMPANY', 'FAILED_ATTEMPT'].includes(o.status) && o.carrier
+    ? ` <span class="pill">${o.carrier === 'COMPANY' ? '📦 ' + esc(t('set.carrier_COMPANY')) : '🛵 ' + esc(staffName(o.driver_id) || t('dl.driver_short'))}</span>` : '');
   function fillTemplate(template, values) {
     return template.replace(/\{(\w+)\}/g, (match, key) =>
       Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
@@ -299,12 +306,13 @@
   async function load() {
     const reqId = ++state.req;
     let q = DB.client.from('orders')
-      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source,is_first_order,fee_tbc,fee_set_at,is_gift', { count: 'exact' })
+      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source,is_first_order,fee_tbc,fee_set_at,is_gift,carrier,driver_id', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(state.page * PAGE, state.page * PAGE + PAGE - 1);
     if (state.tab === 'todo') q = q.in('status', ['NEW', 'CONFIRMED']);
     if (state.tab === 'awaiting') q = q.eq('payment_status', 'AWAITING').not('status', 'in', '(CANCELLED,RETURNED)');
     if (state.tab === 'packed') q = q.eq('status', 'PACKED');
+    if (state.tab === 'way') q = q.in('status', ['OUT_FOR_DELIVERY', 'WITH_COMPANY', 'FAILED_ATTEMPT']);
     const s = state.q.replace(/[",()\\*%]/g, ' ').trim();
     if (s) {
       const digits = s.replace(/\D/g, '');
@@ -332,7 +340,7 @@
       b.innerHTML = `<div class="body">
           <div class="title"><span dir="ltr">${esc(o.order_no)}</span> · ${esc(o.name)}</div>
           <div class="meta">${esc(when(o.created_at))} · ${esc(o.district)}</div>
-          <div>${statusPill(o.status)} ${payPill(o)}${giftPill(o)}${srcPill(o)}${newPill(o)}${feePill(o)}</div>
+          <div>${statusPill(o.status)} ${payPill(o)}${giftPill(o)}${deliveryPill(o)}${srcPill(o)}${newPill(o)}${feePill(o)}</div>
         </div>
         <div class="end"><strong>${money(o.total)}</strong></div>`;
       b.addEventListener('click', () => open(o.id));
@@ -428,6 +436,8 @@
           <button type="button" class="btn btn-primary" id="od-pay">${esc(t('prep.confirm_payment'))}</button></div></div>` : ''}
       </fieldset>
 
+      ${deliveryHtml(o)}
+
       ${canEdit && !done ? `<fieldset><legend>${esc(t('prep.actions'))}</legend><div class="od-actions">
         ${o.status === 'NEW' ? `<button type="button" class="btn" data-status="CONFIRMED">${esc(t('prep.confirm'))}</button>` : ''}
         ${['NEW', 'CONFIRMED'].includes(o.status) ? `<button type="button" class="btn btn-primary" data-status="PACKED">${esc(t('prep.pack'))}</button>` : ''}
@@ -463,6 +473,7 @@
     });
     const cancelBtn = $('#od-cancel', body);
     if (cancelBtn) cancelBtn.addEventListener('click', () => openCancel(o));
+    wireDelivery(o, body);
     $('#od-print', body).addEventListener('click', () => printSlip(o));
     const sn = $('#od-save-notes', body);
     if (sn) sn.addEventListener('click', async () => {
@@ -472,7 +483,81 @@
     });
   }
 
-  // Something typed in the open order and not saved yet (note, payment reference, fee)?
+  // ---------- delivery: who delivers, out / handed over / delivered / failed / back / returned ----------
+  // Every move goes through staff_delivery (the database checks the order's status each time).
+  function deliveryHtml(o) {
+    if (['CANCELLED', 'RETURNED'].includes(o.status)) return '';
+    const drivers = staffList.filter((s) => s.role === 'DRIVER' && s.active);
+    const by = o.carrier === 'COMPANY' ? t('set.carrier_COMPANY')
+      : o.carrier === 'DRIVER' ? (o.driver_id ? t('dl.driver_named', { name: staffName(o.driver_id) || '?' }) : t('dl.driver_none'))
+      : t('dl.not_chosen');
+    const canAssign = canEdit && ['NEW', 'CONFIRMED', 'PACKED', 'FAILED_ATTEMPT'].includes(o.status);
+    const ready = ['PACKED', 'FAILED_ATTEMPT'].includes(o.status);
+    const onWay = ['OUT_FOR_DELIVERY', 'WITH_COMPANY'].includes(o.status);
+    const c = DB.amountToCollect(o);
+    const cashDefault = o.is_gift || c.kind === 'paid' ? 0 : c.amount;   // null = fee still unknown: Mika types it
+    return `<fieldset class="od-delivery"><legend>${esc(t('dl.title'))}</legend>
+      <p>${esc(t('dl.by'))}: <strong>${esc(by)}</strong></p>
+      ${o.tracking_no ? `<p>${esc(t('dl.tracking'))}: <strong dir="ltr">${esc(o.tracking_no)}</strong></p>` : ''}
+      ${o.out_at && (onWay || o.status === 'DELIVERED') ? `<p class="meta">${esc(t('dl.left_at', { when: when(o.out_at) }))}</p>` : ''}
+      ${o.status === 'FAILED_ATTEMPT' ? `<div class="alert alert-warn">${esc(t('dl.failed_msg', { n: o.failed_count, reason: o.failed_reason || '' }))}</div>` : ''}
+      ${o.status === 'DELIVERED' ? `<p class="ok">✓ ${esc(t('dl.delivered_msg', { when: when(o.delivered_at || o.updated_at) }))}${o.cash_collected != null ? ' · ' + esc(t('dl.cash_got', { amount: I18n.money(o.cash_collected, S.currency) })) : ''}</p>` : ''}
+      ${canAssign ? `<div class="grid-2 stack-sm">
+          <label>${esc(t('dl.by'))}<select id="od-carrier">
+            <option value="">${esc(t('dl.choose'))}</option>
+            <option value="DRIVER" ${o.carrier === 'DRIVER' ? 'selected' : ''}>${esc(t('set.carrier_DRIVER'))}</option>
+            <option value="COMPANY" ${o.carrier === 'COMPANY' ? 'selected' : ''}>${esc(t('set.carrier_COMPANY'))}</option></select></label>
+          <label id="od-driver-wrap" ${o.carrier === 'DRIVER' ? '' : 'hidden'}>${esc(t('dl.driver'))}<select id="od-driver">
+            <option value="">${esc(t('dl.choose'))}</option>
+            ${drivers.map((d) => `<option value="${esc(d.user_id)}" ${d.user_id === o.driver_id || (!o.driver_id && drivers.length === 1) ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}</select></label>
+        </div>
+        ${drivers.length ? '' : `<p class="hint">${esc(t('dl.no_drivers'))}</p>`}
+        <button type="button" class="btn btn-small" id="od-assign">${esc(t('dl.save_by'))}</button>` : ''}
+      ${canEdit && ready && o.carrier === 'DRIVER' && o.driver_id ? `<div class="od-actions"><button type="button" class="btn btn-primary" data-dl="OUT">🛵 ${esc(t('dl.out'))}</button></div>` : ''}
+      ${canEdit && ready && o.carrier === 'COMPANY' ? `<div class="field"><label for="od-track">${esc(t('dl.tracking'))}</label>
+          <div class="input-with-btn"><input id="od-track" type="text" dir="ltr" maxlength="60" value="${esc(o.tracking_no || '')}">
+          <button type="button" class="btn btn-primary" data-dl="COMPANY">📦 ${esc(t('dl.handed'))}</button></div></div>` : ''}
+      ${canEdit && onWay ? `<div class="field"><label for="od-cash">${esc(t('dl.cash'))}</label>
+          <div class="input-with-btn"><input id="od-cash" type="text" inputmode="decimal" dir="ltr" maxlength="9" value="${cashDefault == null ? '' : esc(cashDefault)}">
+          <button type="button" class="btn btn-primary" data-dl="DELIVERED">✓ ${esc(t('dl.delivered'))}</button></div>
+          <p class="hint">${esc(t('dl.cash_hint'))}</p></div>
+        <div class="field"><label for="od-fail">${esc(t('dl.fail_reason'))}</label>
+          <div class="input-with-btn"><input id="od-fail" type="text" maxlength="300">
+          <button type="button" class="btn" data-dl="FAILED">✗ ${esc(t('dl.failed'))}</button></div></div>` : ''}
+      ${canEdit && (onWay || o.status === 'FAILED_ATTEMPT' || o.status === 'DELIVERED') ? `<div class="od-actions">
+          ${o.status !== 'DELIVERED' ? `<button type="button" class="btn btn-ghost" data-dl="BACK">↩ ${esc(t('dl.back'))}</button>` : ''}
+          ${['FAILED_ATTEMPT', 'DELIVERED'].includes(o.status) ? `<button type="button" class="btn btn-danger" id="od-return">${esc(t('dl.return'))}</button>` : ''}</div>` : ''}
+    </fieldset>`;
+  }
+
+  function wireDelivery(o, body) {
+    const carrierSel = $('#od-carrier', body);
+    if (carrierSel) carrierSel.addEventListener('change', () => { $('#od-driver-wrap', body).hidden = carrierSel.value !== 'DRIVER'; });
+    const assign = $('#od-assign', body);
+    if (assign) assign.addEventListener('click', () => {
+      const carrier = carrierSel.value || null;
+      const driver = carrier === 'DRIVER' ? ($('#od-driver', body).value || null) : null;
+      act(() => DB.client.rpc('staff_assign_delivery', { p_order_id: o.id, p_carrier: carrier, p_driver_id: driver }));
+    });
+    body.querySelectorAll('[data-dl]').forEach((b) => b.addEventListener('click', () => {
+      const args = { p_order_id: o.id, p_action: b.dataset.dl };
+      if (args.p_action === 'COMPANY') args.p_tracking = $('#od-track', body).value.trim();
+      if (args.p_action === 'DELIVERED') {
+        const raw = $('#od-cash', body).value.trim().replace(',', '.');
+        if (!/^\d{1,6}(\.\d{1,2})?$/.test(raw)) { toast(t('prep.err_BAD_CASH'), true); $('#od-cash', body).focus(); return; }
+        args.p_cash = Number(raw);
+      }
+      if (args.p_action === 'FAILED') {
+        args.p_reason = $('#od-fail', body).value.trim();
+        if (!args.p_reason) { toast(t('prep.err_REASON_REQUIRED'), true); $('#od-fail', body).focus(); return; }
+      }
+      act(() => DB.client.rpc('staff_delivery', args));
+    }));
+    const ret = $('#od-return', body);
+    if (ret) ret.addEventListener('click', () => openCancel(o, true));
+  }
+
+  // Something typed in the open order and not saved yet (note, payment reference, fee, delivery)?
   // Then a live update must not redraw the order (it would wipe what Mika is typing).
   function typing() {
     const o = state.current;
@@ -480,7 +565,9 @@
     if (!o) return false;
     return (el('#od-ref') && el('#od-ref').value.trim() !== '')
       || (el('#od-notes') && el('#od-notes').value !== (o.notes || ''))
-      || (el('#od-fee') && el('#od-fee').value.trim() !== (o.fee_set_at ? String(o.delivery_fee) : ''));
+      || (el('#od-fee') && el('#od-fee').value.trim() !== (o.fee_set_at ? String(o.delivery_fee) : ''))
+      || (el('#od-fail') && el('#od-fail').value.trim() !== '')
+      || (el('#od-track') && el('#od-track').value.trim() !== (o.tracking_no || ''));
   }
 
   async function act(fn) {
@@ -495,8 +582,14 @@
   // cancel confirmation
   const cdlg = $('#cancel-dialog');
   cdlg.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => cdlg.close()));
-  function openCancel(o) {
-    $('#cx-title').innerHTML = esc(t('prep.cancel_title', { no: '' })).replace(/\?$/, '') + `<span dir="ltr">${esc(o.order_no)}</span>?`;
+  // the same dialog cancels (before delivery) or records a return (after a delivery / failed attempt);
+  // both put the items back into stock
+  let cancelIsReturn = false;
+  function openCancel(o, isReturn) {
+    cancelIsReturn = !!isReturn;
+    $('#cx-title').innerHTML = esc(t(cancelIsReturn ? 'prep.return_title' : 'prep.cancel_title', { no: '' })).replace(/\?$/, '') + `<span dir="ltr">${esc(o.order_no)}</span>?`;
+    $('#cancel-dialog .sheet-body > p').textContent = t(cancelIsReturn ? 'prep.return_help' : 'prep.cancel_help');
+    $('#cx-go').textContent = t(cancelIsReturn ? 'prep.return_go' : 'prep.cancel_go');
     $('#cx-reason').value = '';
     $('#cx-error').hidden = true;
     cdlg.showModal();
@@ -505,10 +598,10 @@
     const reason = $('#cx-reason').value.trim();
     if (!reason) { $('#cx-error').textContent = t('prep.err_REASON_REQUIRED'); $('#cx-error').hidden = false; return; }
     const o = state.current;
-    const { error } = await DB.client.rpc('cancel_order', { p_order_id: o.id, p_reason: reason });
+    const { error } = await DB.client.rpc('cancel_order', { p_order_id: o.id, p_reason: reason, p_is_return: cancelIsReturn });
     if (error) { $('#cx-error').textContent = errText(error); $('#cx-error').hidden = false; return; }
     cdlg.close();
-    toast(t('status.CANCELLED'));
+    toast(t(cancelIsReturn ? 'status.RETURNED' : 'status.CANCELLED'));
     await open(o.id);
     load();
   });
