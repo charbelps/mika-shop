@@ -13,6 +13,8 @@
   <meta name="apple-mobile-web-app-title" content="Orders">
   <title>Deliveries</title>
   <link rel="stylesheet" href="../css/staff.css">
+  <link rel="stylesheet" href="../css/packing.css">
+  <link rel="stylesheet" href="../css/driver.css">
   <script src="../js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
           integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
@@ -21,19 +23,41 @@
   <script src="../js/db.js"></script>
   <script src="../js/staff-auth.js"></script>
 </head>
-<!-- Placeholder: the real driver screen is Phase 2. -->
-<body class="auth-pending">
-  <div class="app">
+<!-- Driver screen (Phase 2): the driver's own deliveries, big buttons for one hand. -->
+<body class="auth-pending theme-linen">
+  <div class="app no-nav">
     <header class="topbar">
       <div class="who"><strong data-staff-name></strong><small data-staff-role></small></div>
       <button type="button" class="btn btn-ghost btn-small" data-lang-toggle data-i18n="common.lang_toggle"></button>
       <button type="button" class="btn btn-small" data-sign-out data-i18n="staff.sign_out"></button>
     </header>
-    <main class="main">
-      <h1 data-i18n="staff.nav_delivery"></h1>
-      <p class="empty" data-i18n="staff.not_built"></p>
+    <main class="main dr-main">
+      <div class="toolbar pk-head">
+        <h1 data-i18n="drv.title"></h1>
+        <span class="pill" id="dr-live"></span>
+      </div>
+      <div class="dr-summary" id="dr-summary" aria-live="polite"></div>
+      <button type="button" class="btn btn-small" id="dr-wake" hidden></button>
+      <section aria-labelledby="dr-h-todo">
+        <h2 id="dr-h-todo" class="dr-h" data-i18n="drv.to_deliver"></h2>
+        <div class="dr-list" id="dr-todo"></div>
+      </section>
+      <section aria-labelledby="dr-h-done">
+        <h2 id="dr-h-done" class="dr-h" data-i18n="drv.done_today"></h2>
+        <div class="dr-list" id="dr-done"></div>
+      </section>
     </main>
   </div>
-  <script>StaffAuth.require(['DRIVER']);</script>
+
+  <!-- Delivered / not delivered: one question at a time -->
+  <dialog class="sheet small" id="dr-dialog" aria-labelledby="dr-d-title">
+    <div class="sheet-head"><h2 id="dr-d-title"></h2></div>
+    <div class="sheet-body" id="dr-d-body"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn" data-close data-i18n="drv.back_btn"></button>
+      <button type="button" class="btn btn-primary" id="dr-d-go"></button>
+    </div>
+  </dialog>
+  <script src="../js/driver.js"></script>
 </body>
 </html>

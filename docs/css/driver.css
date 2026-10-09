@@ -1,0 +1,39 @@
+/* Driver screen (Phase 2). Same Linen Studio tokens as the packing tab (packing.css, body.theme-linen).
+   One hand on the phone, often outside: big text, big buttons, the money in a big box. */
+
+.app.no-nav { padding-block-end: 1.5rem; }
+@media (min-width: 900px) { .app.no-nav { padding-inline-start: 0; } }
+.dr-main { max-width: 760px; }
+
+.dr-summary { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .25rem 1rem; }
+.dr-summary span { padding: .45rem .75rem; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+#dr-wake { margin-block-end: 1rem; }
+.dr-h { font-size: 1.35rem; margin: 1.25rem 0 .6rem; }
+.dr-list { display: grid; gap: 1rem; }
+
+.dr-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1rem;
+           display: flex; flex-direction: column; gap: .7rem; }
+.dr-card.failed { border-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+.dr-card.done { opacity: .85; }
+.dr-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; }
+.dr-top h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; color: var(--brand); }
+.dr-state { color: var(--muted); font-size: .92rem; margin: .1rem 0 0; }
+.dr-money { flex: none; max-width: 55%; padding: .5rem .75rem; border-radius: 12px; font-weight: 800; text-align: center; line-height: 1.25; }
+.dr-money.collect { background: var(--warn-soft); color: var(--warn); font-size: 1.25rem; }
+.dr-money.paid { background: var(--ok-soft); color: var(--ok); font-size: 1rem; }
+.dr-who { font-size: 1.15rem; font-weight: 700; margin: 0; overflow-wrap: anywhere; }
+.dr-addr { margin: 0; font-size: 1.02rem; line-height: 1.4; overflow-wrap: anywhere; }
+.dr-addr .meta { color: var(--muted); }
+.dr-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.dr-links .btn { min-height: 52px; font-size: 1rem; }
+.dr-note { margin: 0; padding: .55rem .75rem; border-radius: var(--radius); background: var(--warn-soft); white-space: pre-line; }
+.dr-fail { margin: 0; padding: .55rem .75rem; border-radius: var(--radius); background: var(--danger-soft); color: var(--danger); font-weight: 600; }
+.dr-items summary { cursor: pointer; color: var(--muted); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.dr-items ul { margin: .25rem 0 0; padding-inline-start: 1.2rem; }
+.dr-acts { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.dr-acts .btn { min-height: 58px; font-size: 1.08rem; }
+.dr-acts .btn:only-child { grid-column: 1 / -1; }
+.dr-reasons { display: flex; flex-wrap: wrap; gap: .4rem; margin-block-end: .75rem; }
+.dr-reasons .chip-btn[aria-pressed=true] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+#dr-cash { font-size: 1.6rem; min-height: 60px; text-align: center; font-weight: 700; }
+.dr-expect { font-size: 1.05rem; margin: 0 0 .75rem; }
