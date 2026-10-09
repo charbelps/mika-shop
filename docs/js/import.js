@@ -29,7 +29,9 @@
   }
 
   // Pure: CSV text -> rows with errors + payload for admin_import_products.
-  // existing: Set of SKUs already in the database.
+  // existing: Map SKU -> { stock, has_variants, variants: Map(lower-case option name -> stock) }
+  // for the products already in the database (a plain Set of SKUs also works, without the
+  // stock comparison).
   function analyse(csvText, existing) {
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: 'greedy', transformHeader: normHeader });
     const headers = parsed.meta.fields || [];
@@ -94,12 +96,51 @@
       if (p.variants.length) out.variants = p.variants;
       return out;
     });
+    // Stock in the file that differs from the shop's stock now (products / options that already
+    // exist). A re-imported sheet usually still has last week's numbers: orders since then would
+    // be undone, so this stock is only written when Mika ticks "also change the stock".
+    const stockChanges = [];
+    if (existing instanceof Map) products.forEach((p) => {
+      const cur = existing.get(p.sku);
+      if (!cur) return;
+      if (p.stock != null && !p.variants && !cur.has_variants && Number(p.stock) !== cur.stock) {
+        stockChanges.push({ sku: p.sku, label: '', from: cur.stock, to: Number(p.stock) });
+      }
+      (p.variants || []).forEach((v) => {
+        const vs = cur.variants.get(v.label_en.toLowerCase());
+        if (v.stock != null && vs != null && Number(v.stock) !== vs) {
+          stockChanges.push({ sku: p.sku, label: v.label_en, from: vs, to: Number(v.stock) });
+        }
+      });
+    });
+
     const badRows = rows.filter((r) => Object.keys(r.errors).length).length;
     return {
-      rows, products, fileErrors, unknown, badRows,
+      rows, products, fileErrors, unknown, badRows, stockChanges, existing,
       newCount: [...bySku.values()].filter((p) => p._new).length,
       updateCount: [...bySku.values()].filter((p) => !p._new).length,
     };
+  }
+
+  // What is sent to the database. Without "also change the stock": no stock for products and
+  // options that already exist (new products and new options always get theirs).
+  function payloadFor(a, withStock) {
+    if (withStock || !(a.existing instanceof Map)) return a.products;
+    return a.products.map((p) => {
+      const cur = a.existing.get(p.sku);
+      if (!cur) return p;
+      const out = { ...p };
+      delete out.stock;
+      if (out.variants) {
+        out.variants = out.variants.map((v) => {
+          if (!cur.variants.has(v.label_en.toLowerCase())) return v;
+          const rest = { ...v };
+          delete rest.stock;
+          return rest;
+        });
+      }
+      return out;
+    });
   }
   function markFirst(rows, p, field, msg) {
     const r = rows.find((x) => x.line === p._lines[0]);
@@ -121,12 +162,18 @@
     return { error: 'imp.photo_err_nosku' };
   }
 
-  async function fetchAllSkus() {
-    const out = [];
+  // Every product already in the database with its stock: Map SKU -> { stock, has_variants, variants }
+  async function fetchExisting() {
+    const out = new Map();
     for (let from = 0; ; from += 1000) {
-      const { data, error } = await DB.client.from('products').select('sku').order('sku').range(from, from + 999);
+      const { data, error } = await DB.client.from('products').select('sku,stock,has_variants,variants(label_en,stock)')
+        .order('sku').range(from, from + 999);
       if (error) throw error;
-      out.push(...data.map((r) => r.sku));
+      data.forEach((r) => out.set(r.sku, {
+        stock: r.stock,
+        has_variants: r.has_variants,
+        variants: new Map((r.variants || []).map((v) => [String(v.label_en).toLowerCase(), v.stock])),
+      }));
       if (data.length < 1000) break;
     }
     return out;
@@ -176,8 +223,8 @@
     const box = document.getElementById('imp-preview');
     box.innerHTML = `<p class="hint">${esc(t('common.loading'))}</p>`;
     try {
-      const [text, skus] = await Promise.all([file.text(), fetchAllSkus()]);
-      current = analyse(text, new Set(skus));
+      const [text, existing] = await Promise.all([file.text(), fetchExisting()]);
+      current = analyse(text, existing);
       renderPreview(box, file.name);
     } catch (ex) {
       console.error(ex);
@@ -195,6 +242,12 @@
       ${a.unknown.length ? `<div class="alert alert-warn">${esc(t('imp.unknown_columns', { cols: a.unknown.join(', ') }))}</div>` : ''}
       <p><strong>${esc(t('imp.summary', { products: a.products.length, new: a.newCount, update: a.updateCount, rows: a.rows.length }))}</strong></p>
       ${a.badRows ? `<div class="alert alert-error">${esc(t('imp.bad_rows', { n: a.badRows }))}</div>` : ''}
+      ${a.stockChanges.length ? `<div class="alert alert-warn" id="imp-stock-box">
+        <p>${esc(t('imp.stock_changes', { n: a.stockChanges.length }))}</p>
+        <ul class="hint">${a.stockChanges.slice(0, 8).map((c) => `<li><span dir="ltr">${esc(c.sku)}${c.label ? ' · ' + esc(c.label) : ''}</span>: <span dir="ltr">${c.from} → ${c.to}</span></li>`).join('')}${a.stockChanges.length > 8 ? '<li>…</li>' : ''}</ul>
+        <label class="check"><input type="checkbox" id="imp-stock-too"> ${esc(t('imp.stock_too'))}</label>
+        <p class="hint">${esc(t('imp.stock_too_help'))}</p>
+      </div>` : ''}
       <div class="table-wrap"><table class="data">
         <thead><tr><th>#</th><th></th>${cols.map((c) => `<th>${esc(c)}</th>`).join('')}<th>${esc(t('imp.problems'))}</th></tr></thead>
         <tbody>${a.rows.map((r) => {
@@ -216,7 +269,8 @@
     const out = document.getElementById('imp-result');
     btn.disabled = true;
     btn.textContent = t('imp.importing');
-    const { data, error } = await DB.client.rpc('admin_import_products', { p_rows: current.products });
+    const withStock = !!(document.getElementById('imp-stock-too') || {}).checked;
+    const { data, error } = await DB.client.rpc('admin_import_products', { p_rows: payloadFor(current, withStock) });
     if (error) {
       btn.disabled = false;
       btn.textContent = t('imp.import_n', { n: current.products.length });
@@ -237,7 +291,7 @@
     const box = document.getElementById('imp-photo-report');
     box.innerHTML = `<p class="hint">${esc(t('common.loading'))}</p>`;
     let skus;
-    try { skus = await fetchAllSkus(); } catch (ex) {
+    try { skus = [...(await fetchExisting()).keys()]; } catch (ex) {
       box.innerHTML = `<div class="alert alert-error">${esc(t('common.error_generic'))}</div>`; return;
     }
     const lookup = new Map(skus.map((s) => [s.toLowerCase(), s]));
@@ -277,5 +331,5 @@
     render();
   }
 
-  window.ImportTab = { show, analyse, matchPhoto };
+  window.ImportTab = { show, analyse, matchPhoto, payloadFor };
 })();

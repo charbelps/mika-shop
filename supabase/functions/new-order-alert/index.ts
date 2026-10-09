@@ -2,8 +2,9 @@
 //
 // 1) Called by the database (trigger orders_notify_new, via pg_net) with { "order_id": 123 }.
 //    Reads the order itself with the service key (the request carries only the id, so nobody
-//    can make it send made-up content), claims it (orders.alert_sent_at) so every order is
-//    notified at most once, and sends a web push to every device in push_subscriptions that
+//    can make it send made-up content), skips orders older than an hour, claims it
+//    (orders.alert_sent_at) so every order is notified at most once, and sends a web push to
+//    every device in push_subscriptions that
 //    belongs to an active ADMIN or OWNER. Devices the push service says are gone are removed.
 // 2) { "action": "test" } with a staff login (Authorization: Bearer <their token>): sends a test
 //    notification to that person's own devices ("Send a test" button on the Orders screen).
@@ -23,6 +24,8 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const VAPID_PUBLIC = Deno.env.get('VAPID_PUBLIC_KEY') ?? '';
 const VAPID_PRIVATE = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'https://charbelps.github.io/mika-shop/';
+// orders older than this are never notified (the database calls within seconds of the order)
+const MAX_AGE_MS = 60 * 60 * 1000;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -107,6 +110,19 @@ Deno.serve(async (req) => {
   if (!VAPID_PUBLIC || !VAPID_PRIVATE) return reply(200, { skipped: 'notifications not configured' });
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
+  // Only NEW orders: the database calls this the moment an order is placed. The address is
+  // public, so an old order (e.g. every order from before a phone turned notifications on)
+  // is never notified when someone else calls it.
+  const { data: fresh, error: freshError } = await db.from('orders')
+    .select('id,created_at,alert_sent_at').eq('id', orderId).maybeSingle();
+  if (freshError) {
+    console.error('could not read the order', freshError.message);
+    return reply(500, { error: 'notification service unavailable' });
+  }
+  if (!fresh) return reply(200, { skipped: 'no such order' });
+  if (fresh.alert_sent_at) return reply(200, { skipped: 'already sent' });
+  if (Date.now() - new Date(fresh.created_at).getTime() > MAX_AGE_MS) return reply(200, { skipped: 'too old' });
+
   // who gets it: devices of active ADMIN / OWNER staff
   const { data: staff, error: staffError } = await db.from('staff').select('user_id').eq('active', true).in('role', ['ADMIN', 'OWNER']);
   if (staffError) {
@@ -125,7 +141,8 @@ Deno.serve(async (req) => {
 
   // claim the order: only one call can switch alert_sent_at from empty to now
   const { data: claimed, error: cErr } = await db.from('orders').update({ alert_sent_at: new Date().toISOString() })
-    .eq('id', orderId).is('alert_sent_at', null).select('id');
+    .eq('id', orderId).is('alert_sent_at', null)
+    .gte('created_at', new Date(Date.now() - MAX_AGE_MS).toISOString()).select('id');
   if (cErr) return reply(500, { error: 'claim failed' });
   if (!claimed?.length) return reply(200, { skipped: 'already sent or no such order' });
   const unclaim = async () => {
@@ -135,7 +152,7 @@ Deno.serve(async (req) => {
 
   try {
     const [{ data: order, error: orderError }, { data: cur, error: currencyError }] = await Promise.all([
-      db.from('orders').select('id,order_no,name,district,total,payment_method,source,is_first_order,order_items(qty)').eq('id', orderId).single(),
+      db.from('orders').select('id,order_no,name,district,total,payment_method,source,is_first_order,fee_tbc,order_items(qty)').eq('id', orderId).single(),
       db.from('settings').select('value').eq('key', 'currency').maybeSingle(),
     ]);
     if (orderError) throw orderError;

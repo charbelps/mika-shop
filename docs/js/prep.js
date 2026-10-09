@@ -449,9 +449,21 @@
     $('#od-print', body).addEventListener('click', () => printSlip(o));
     const sn = $('#od-save-notes', body);
     if (sn) sn.addEventListener('click', async () => {
-      const { error } = await DB.client.from('orders').update({ notes: $('#od-notes').value }).eq('id', o.id);
-      if (error) toast(errText(error), true); else toast(t('prep.saved'));
+      const notes = $('#od-notes').value;
+      const { error } = await DB.client.from('orders').update({ notes }).eq('id', o.id);
+      if (error) toast(errText(error), true); else { o.notes = notes; toast(t('prep.saved')); }
     });
+  }
+
+  // Something typed in the open order and not saved yet (note, payment reference, fee)?
+  // Then a live update must not redraw the order (it would wipe what Mika is typing).
+  function typing() {
+    const o = state.current;
+    const el = (s) => $(s, dlg);
+    if (!o) return false;
+    return (el('#od-ref') && el('#od-ref').value.trim() !== '')
+      || (el('#od-notes') && el('#od-notes').value !== (o.notes || ''))
+      || (el('#od-fee') && el('#od-fee').value.trim() !== (o.fee_set_at ? String(o.delivery_fee) : ''));
   }
 
   async function act(fn) {
@@ -525,7 +537,10 @@
     }
     clearTimeout(reloadTimer);
     reloadTimer = setTimeout(load, 400);
-    if (state.current && payload && payload.new && payload.new.id === state.current.id && dlg.open) open(state.current.id);
+    if (state.current && payload && payload.new && payload.new.id === state.current.id && dlg.open) {
+      if (typing()) toast(t('prep.changed_elsewhere'), false, 8000);
+      else open(state.current.id);
+    }
   }
   const live = $('#o-live');
   DB.client.channel('prep-orders')
@@ -551,5 +566,5 @@
       else open(m.id);
     });
   }
-  window.Prep = { load, open, onChange, printSlip };
+  window.Prep = { load, open, onChange, printSlip, typing };
 })();

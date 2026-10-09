@@ -243,7 +243,10 @@
   // ---------- product editor ----------
   const pDialog = $('#product-dialog');
   closeOnButtons(pDialog);
-  const ed = { isNew: true, originalPhotos: [], photos: [], uploaded: [], variants: [], saved: false, busy: 0 };
+  // stockSeen / variant.stock_seen: the stock when the editor opened. The database keeps the
+  // current stock if an order changed it meanwhile and Mika didn't touch the field (STOCK_CHANGED
+  // if she did), so saving never brings sold items back.
+  const ed = { isNew: true, originalPhotos: [], photos: [], uploaded: [], variants: [], saved: false, busy: 0, stockSeen: null };
 
   function showEdError(msg) { const el = $('#pd-error'); el.textContent = msg; el.hidden = false; el.scrollIntoView({ block: 'nearest' }); }
 
@@ -263,9 +266,10 @@
       originalPhotos: p ? [...p.photos] : [],
       photos: p ? [...p.photos] : [],
       uploaded: [],
-      variants: p ? [...p.variants].sort((a, b) => a.sort - b.sort || a.id - b.id).map((v) => ({ ...v })) : [],
+      variants: p ? [...p.variants].sort((a, b) => a.sort - b.sort || a.id - b.id).map((v) => ({ ...v, stock_seen: v.stock })) : [],
       saved: false,
       busy: 0,
+      stockSeen: p ? p.stock : null,
     });
     $('#pd-title').textContent = t(p ? 'admin.edit_product' : 'admin.new_product');
     $('#pd-error').hidden = true;
@@ -438,11 +442,13 @@
       active: $('#pd-active').checked,
       ar_needs_review: wasReview && !$('#pd-ar-ok').checked,
     };
+    if (!ed.isNew) product.stock_seen = ed.stockSeen;
     // A product without variants keeps any old variants but turns them off in the shop
     // only if the admin unticks them; we always send them so nothing is lost.
     const variants = ed.variants.map((v, i) => ({
       id: v.id, label_en: String(v.label_en).trim(), label_ar: String(v.label_ar || '').trim(),
       price: num(v.price), stock: Math.max(0, parseInt(v.stock, 10) || 0), active: !!v.active, sort: i,
+      ...(v.id ? { stock_seen: v.stock_seen } : {}),
     }));
     // When "has options" is off, unsaved blank options are dropped.
     const toSend = hasVariants ? variants : variants.filter((v) => v.id);
@@ -453,6 +459,7 @@
     const { error } = await DB.client.rpc('admin_save_product', { p_product: product, p_variants: toSend, p_is_new: ed.isNew });
     btn.disabled = false;
     btn.textContent = t('common.save');
+    if (error && /STOCK_CHANGED/.test(error.message || '')) return stockChanged(sku);
     if (error) return showEdError(errorText(error));
 
     ed.saved = true;
@@ -462,6 +469,30 @@
     toast(t('admin.saved_product'));
     loadProducts();
   });
+
+  // An order changed the stock while the editor was open AND Mika changed the stock field:
+  // nothing was saved. Fields she changed keep her number; untouched fields take the stock as it
+  // is now (else the next Save would write the old number back). The next Save then goes through.
+  async function stockChanged(sku) {
+    const { data } = await DB.client.from('products').select('stock, variants(id,label_en,label_ar,stock)').eq('sku', sku).single();
+    const untouched = (value, seen) => (parseInt(value, 10) || 0) === seen;
+    const now = [];
+    if (data) {
+      const field = $('#pd-stock');
+      if (data.stock !== ed.stockSeen && !$('#pd-has-variants').checked) now.push(String(data.stock));
+      if (untouched(field.value, ed.stockSeen)) field.value = data.stock;
+      ed.stockSeen = data.stock;
+      (data.variants || []).forEach((dv) => {
+        const v = ed.variants.find((x) => x.id === dv.id);
+        if (!v) return;
+        if (dv.stock !== v.stock_seen) now.push(I18n.pick(dv, 'label') + ': ' + dv.stock);
+        if (untouched(v.stock, v.stock_seen)) v.stock = dv.stock;
+        v.stock_seen = dv.stock;
+      });
+      renderVariants();
+    }
+    showEdError(t('admin.err_stock_changed', { now: now.join(', ') || '?' }));
+  }
 
   // Closing without saving: delete photos uploaded during this edit.
   pDialog.addEventListener('close', () => {

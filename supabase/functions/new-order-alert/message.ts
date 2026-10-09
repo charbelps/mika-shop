@@ -15,6 +15,7 @@ export interface Order {
   payment_method: string;
   source?: string | null;
   is_first_order?: boolean | null;
+  fee_tbc?: boolean | null;   // C1: delivery fee to be confirmed by Mika
 }
 
 export interface Push {
@@ -41,17 +42,18 @@ export function buildPush(order: Order, items: OrderItem[], currency = '', lang:
   const total = amount(order.total, currency);
   const src = order.source ?? '';
   const isNew = order.is_first_order === true;
+  const feeTbc = order.fee_tbc === true;
   return {
     tag: 'order-' + order.order_no,
     url: `staff/prep.html?open=${order.id}`,
     lang,
     en: {
       title: `🛒 New order ${order.order_no}${isNew ? ' · NEW CUSTOMER' : ''}`,
-      body: `${order.name} · ${order.district}\n${n} ${n === 1 ? 'item' : 'items'} · ${total} · ${PAY_EN[order.payment_method] ?? order.payment_method}${SRC_EN[src] ?? ''}`,
+      body: `${order.name} · ${order.district}\n${n} ${n === 1 ? 'item' : 'items'} · ${total} · ${PAY_EN[order.payment_method] ?? order.payment_method}${SRC_EN[src] ?? ''}${feeTbc ? ' · FEE TO CONFIRM' : ''}`,
     },
     ar: {
       title: `🛒 طلب جديد ${order.order_no}${isNew ? ' · زبون جديد' : ''}`,
-      body: `${order.name} · ${order.district}\n${n} قطعة · ${total} · ${PAY_AR[order.payment_method] ?? order.payment_method}${SRC_AR[src] ?? ''}`,
+      body: `${order.name} · ${order.district}\n${n} قطعة · ${total} · ${PAY_AR[order.payment_method] ?? order.payment_method}${SRC_AR[src] ?? ''}${feeTbc ? ' · رسم التوصيل للتأكيد' : ''}`,
     },
   };
 }
