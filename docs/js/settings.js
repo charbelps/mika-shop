@@ -74,6 +74,7 @@
     { id: 'text_whatsapp', fields: [
       'whatsapp_ask_en', 'whatsapp_ask_ar', 'whatsapp_share_en', 'whatsapp_share_ar',
       'whatsapp_order_en', 'whatsapp_order_ar', 'whatsapp_status_en', 'whatsapp_status_ar',
+      'whatsapp_back_en', 'whatsapp_back_ar',
     ] },
     { id: 'text_footer', fields: ['footer_note_en', 'footer_note_ar'] },
   ];

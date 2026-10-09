@@ -47,6 +47,7 @@
       <section id="tab-products" hidden>
         <div class="toolbar">
           <h1 style="flex:1;margin:0" data-i18n="staff.nav_products"></h1>
+          <a class="btn btn-small" href="#waiting" id="btn-waiting">🔔 <span data-i18n="aw.title"></span> <span class="pill pill-warn" id="w-count" hidden></span></a>
           <button type="button" class="btn btn-primary" id="btn-new-product" data-i18n="admin.new_product"></button>
         </div>
         <div class="toolbar">
@@ -75,6 +76,16 @@
           <button type="button" class="btn btn-primary" id="btn-new-category" data-i18n="admin.new_category"></button>
         </div>
         <div class="list" id="c-list"></div>
+      </section>
+
+      <!-- ================= BACK IN STOCK (F4): customers waiting for a sold-out item ================= -->
+      <section id="tab-waiting" hidden>
+        <div class="toolbar">
+          <h1 style="flex:1;margin:0">🔔 <span data-i18n="aw.title"></span></h1>
+          <a class="btn btn-small" href="#products" data-i18n="aw.back"></a>
+        </div>
+        <p class="hint" data-i18n="aw.intro"></p>
+        <div class="list" id="w-list"></div>
       </section>
 
       <!-- ================= IMPORT (step 4) ================= -->
@@ -164,6 +175,7 @@
 
         <fieldset>
           <legend data-i18n="admin.stock"></legend>
+          <p class="alert alert-warn" id="pd-waiting" hidden></p>
           <label class="check"><input type="checkbox" id="pd-has-variants"> <span data-i18n="admin.has_variants"></span></label>
           <div class="field" id="pd-stock-wrap">
             <label for="pd-stock" data-i18n="admin.stock_qty"></label>

@@ -302,3 +302,12 @@ input[aria-invalid=true], select[aria-invalid=true] { border-color: var(--danger
 .st-role input { margin-block-start: .2rem; flex: none; }
 .st-creds { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: .75rem;
             white-space: pre-wrap; word-break: break-all; font-size: .95rem; text-align: left; }
+
+/* ---------- back in stock (F4): customers waiting for a sold-out item ---------- */
+.w-group.back { border-inline-start: 4px solid var(--ok); }
+.w-people { list-style: none; margin: .5rem 0; padding: 0; display: flex; flex-direction: column; }
+.w-people li { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between;
+               padding-block: .6rem; border-block-start: 1px solid var(--line); }
+.w-who { min-width: 0; flex: 1 1 12rem; }
+.w-who .meta { color: var(--muted); font-size: .85rem; }
+.w-acts { display: flex; gap: .4rem; flex-wrap: wrap; }

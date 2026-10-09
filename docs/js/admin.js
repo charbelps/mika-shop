@@ -48,14 +48,17 @@
 
   // ---------- tabs ----------
   function showTab() {
-    const tab = ['products', 'categories', 'import'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'products';
-    ['products', 'categories', 'import'].forEach((n) => { $('#tab-' + n).hidden = n !== tab; });
+    const TABS = ['products', 'categories', 'import', 'waiting'];
+    const tab = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'products';
+    TABS.forEach((n) => { $('#tab-' + n).hidden = n !== tab; });
+    const navTab = tab === 'waiting' ? 'products' : tab;   // "Back in stock" lives under Products
     document.querySelectorAll('.nav a[data-tab]').forEach((a) => {
-      if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (a.dataset.tab === navTab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     if (tab === 'products') loadProducts();
     if (tab === 'categories') renderCategories();
     if (tab === 'import' && window.ImportTab) window.ImportTab.show({ categories, toast });
+    if (tab === 'waiting') loadWaiting();
   }
   window.addEventListener('hashchange', showTab);
 
@@ -240,13 +243,102 @@
   $('#p-prev').addEventListener('click', () => { list.page--; loadProducts(); window.scrollTo(0, 0); });
   $('#p-next').addEventListener('click', () => { list.page++; loadProducts(); window.scrollTo(0, 0); });
 
+  // ---------- back in stock (F4): customers waiting for a sold-out item ----------
+  // Requests come from the shop (request_stock_alert). Mika sends each person one WhatsApp
+  // (ready message in the customer's language) and marks it Done (staff_stock_alerts_done).
+  async function waitingCount() {
+    const { count, error } = await DB.client.from('stock_alerts').select('id', { count: 'exact', head: true }).is('notified_at', null);
+    const el = $('#w-count');
+    el.textContent = count || '';
+    el.hidden = !!error || !count;
+  }
+
+  function fillTemplate(template, values) {
+    return template.replace(/\{(\w+)\}/g, (match, key) =>
+      Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
+  }
+  // the WhatsApp message in the customer's language (custom text from Settings, or the standard one)
+  async function backMessage(a) {
+    let lang = a.lang === 'ar' ? 'ar' : 'en';
+    let tc = t;
+    try { tc = await I18n.translator(lang); } catch { lang = I18n.lang; }
+    const p = a.products || {};
+    const v = a.variants;
+    const pick = (o, f) => (lang === 'ar' && o[f + '_ar'] ? o[f + '_ar'] : o[f + '_en']) || '';
+    const product = pick(p, 'name') + (v ? ' (' + pick(v, 'label') + ')' : '');
+    const url = new URL('../product.html?sku=' + encodeURIComponent(a.sku), location.href).href;
+    const values = { name: a.name || '', product, url };
+    const custom = String(settings['whatsapp_back_' + lang] || '').trim();
+    const text = custom ? fillTemplate(custom, values) : tc('aw.msg', values);
+    return 'https://wa.me/' + a.phone.replace(/\D/g, '') + '?text=' + encodeURIComponent(text);
+  }
+
+  let waitingReq = 0;
+  async function loadWaiting() {
+    const my = ++waitingReq;
+    const box = $('#w-list');
+    box.innerHTML = `<p class="hint">${esc(t('common.loading'))}</p>`;
+    const { data, error } = await DB.client.from('stock_alerts')
+      .select('id,sku,variant_id,phone,name,lang,created_at,products(name_en,name_ar,stock,has_variants,active,photos),variants(label_en,label_ar,stock,active)')
+      .is('notified_at', null).order('created_at').limit(1000);
+    if (my !== waitingReq) return;
+    if (error) { box.innerHTML = `<div class="alert alert-error">${esc(errorText(error))}</div>`; return; }
+    waitingCount();
+    if (!data.length) { box.innerHTML = `<p class="empty">${esc(t('aw.none'))}</p>`; return; }
+    // one group per product + option; items back in stock first, then the most wanted
+    const groups = new Map();
+    data.forEach((a) => {
+      const key = a.sku + '|' + (a.variant_id || '');
+      if (!groups.has(key)) groups.set(key, { key, sku: a.sku, p: a.products || {}, v: a.variants, people: [] });
+      groups.get(key).people.push(a);
+    });
+    const stockOfGroup = (g) => (g.v ? g.v.stock : g.p.stock) || 0;
+    const list = [...groups.values()].sort((x, y) => (stockOfGroup(y) > 0) - (stockOfGroup(x) > 0) || y.people.length - x.people.length);
+    const links = await Promise.all(list.flatMap((g) => g.people.map(backMessage)));
+    let li = 0;
+    const when = (iso) => new Date(iso).toLocaleDateString(I18n.lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short' });
+    box.innerHTML = list.map((g) => {
+      const stock = stockOfGroup(g);
+      const back = stock > 0 && g.p.active !== false && (!g.v || g.v.active);
+      const name = I18n.pick(g.p, 'name') + (g.v ? ' · ' + I18n.pick(g.v, 'label') : '');
+      const thumb = g.p.photos && g.p.photos[0] ? `<img class="thumb" src="${esc(Photos.thumbUrl(g.p.photos[0]))}" alt="" loading="lazy">` : '<div class="thumb" aria-hidden="true"></div>';
+      return `<div class="card w-group${back ? ' back' : ''}" data-key="${esc(g.key)}">
+        <div class="row-item" style="padding:0;background:none">${thumb}
+          <div class="body"><div class="title">${esc(name)}</div><div class="meta" dir="ltr">${esc(g.sku)}</div></div>
+          <div class="end"><span class="pill ${back ? 'pill-ok' : 'pill-off'}">${esc(back ? t('aw.back_in_stock', { n: stock }) : t('aw.still_out'))}</span></div>
+        </div>
+        <p class="hint">${esc(t(g.people.length === 1 ? 'aw.one_waiting' : 'aw.n_waiting', { n: g.people.length }))}${back ? '' : ' · ' + esc(t('aw.wait_hint'))}</p>
+        <ul class="w-people">${g.people.map((a) => `<li data-id="${a.id}">
+            <div class="w-who"><strong>${esc(a.name || t('aw.no_name'))}</strong> <span dir="ltr">${esc(a.phone)}</span>
+              <div class="meta">${esc(t('aw.asked', { date: when(a.created_at), lang: t('prep.lang_' + (a.lang === 'ar' ? 'ar' : 'en')) }))}</div></div>
+            <div class="w-acts"><a class="btn btn-small" href="${esc(links[li++])}" target="_blank" rel="noopener">💬 ${esc(t('aw.send'))}</a>
+              <button type="button" class="btn btn-small" data-done="${a.id}">✓ ${esc(t('aw.done'))}</button></div>
+          </li>`).join('')}</ul>
+        ${g.people.length > 1 ? `<button type="button" class="btn btn-small btn-ghost" data-done-all="${g.people.map((a) => a.id).join(',')}">${esc(t('aw.done_all', { n: g.people.length }))}</button>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  $('#w-list').addEventListener('click', async (e) => {
+    const one = e.target.closest('[data-done]');
+    const all = e.target.closest('[data-done-all]');
+    if (!one && !all) return;
+    const ids = (one ? one.dataset.done : all.dataset.doneAll).split(',').map(Number);
+    if (all && !confirm(t('aw.done_all_q', { n: ids.length }))) return;
+    (one || all).disabled = true;
+    const { error } = await DB.client.rpc('staff_stock_alerts_done', { p_ids: ids, p_done: true });
+    if (error) { (one || all).disabled = false; toast(errorText(error), true); return; }
+    toast(t('aw.marked', { n: ids.length }));
+    loadWaiting();
+  });
+
   // ---------- product editor ----------
   const pDialog = $('#product-dialog');
   closeOnButtons(pDialog);
   // stockSeen / variant.stock_seen: the stock when the editor opened. The database keeps the
   // current stock if an order changed it meanwhile and Mika didn't touch the field (STOCK_CHANGED
   // if she did), so saving never brings sold items back.
-  const ed = { isNew: true, originalPhotos: [], photos: [], uploaded: [], variants: [], saved: false, busy: 0, stockSeen: null };
+  const ed = { isNew: true, originalPhotos: [], photos: [], uploaded: [], variants: [], saved: false, busy: 0, stockSeen: null, waiting: 0 };
 
   function showEdError(msg) { const el = $('#pd-error'); el.textContent = msg; el.hidden = false; el.scrollIntoView({ block: 'nearest' }); }
 
@@ -261,6 +353,15 @@
         .eq('sku', sku).order('created_at', { ascending: false }).limit(20);
       history = h.data || [];
     }
+    // customers waiting for this item (F4): a reminder while Mika edits the stock
+    let waiting = 0;
+    if (sku) {
+      const w = await DB.client.from('stock_alerts').select('id', { count: 'exact', head: true }).eq('sku', sku).is('notified_at', null);
+      waiting = w.count || 0;
+    }
+    ed.waiting = waiting;
+    $('#pd-waiting').textContent = t('aw.editor_note', { n: waiting });
+    $('#pd-waiting').hidden = !waiting;
     Object.assign(ed, {
       isNew: !p,
       originalPhotos: p ? [...p.photos] : [],
@@ -466,8 +567,10 @@
     const removed = ed.originalPhotos.filter((p) => !ed.photos.includes(p));
     Photos.remove(removed);
     pDialog.close();
-    toast(t('admin.saved_product'));
+    const restocked = hasVariants ? variants.some((v) => v.active && v.stock > 0) : product.stock > 0;
+    toast(t('admin.saved_product') + (ed.waiting && restocked ? ' · ' + t('aw.saved_note', { n: ed.waiting }) : ''));
     loadProducts();
+    if (ed.waiting) waitingCount();
   });
 
   // An order changed the stock while the editor was open AND Mika changed the stock field:
@@ -508,5 +611,6 @@
   }
   refreshCategoryFilters();
   showTab();
-  window.AdminApp = { loadCategories: async () => { await loadCategories(); refreshCategoryFilters(); }, loadProducts, toast };
+  if (location.hash !== '#waiting') waitingCount();
+  window.AdminApp = { loadCategories: async () => { await loadCategories(); refreshCategoryFilters(); }, loadProducts, toast, loadWaiting };
 })();

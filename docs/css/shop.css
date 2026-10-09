@@ -207,6 +207,12 @@ main { padding-block: 1rem 3rem; min-height: 60vh; flex: 1 0 auto; width: 100%; 
 .buy-row .btn-primary { flex: 1; }
 .share-row { display: flex; flex-wrap: wrap; gap: .6rem; }
 .share-row .btn { flex: 1 1 auto; white-space: nowrap; }   /* side by side when they fit, stacked on small phones */
+/* "Tell me when it's back" (F4) */
+.notify { margin-block: .25rem 1rem; }
+.notify-form { margin-block: .6rem 0; }
+.notify-form .muted { margin-block: 0 .8rem; }
+.link-btn { background: none; border: 0; padding: .35rem 0; min-height: 44px; font: inherit; font-weight: 600;
+            color: var(--brand); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; text-align: start; }
 .desc { white-space: pre-line; margin-block-start: 1rem; }
 .measure { margin-block-start: 1rem; padding: .7rem .9rem; border-radius: var(--radius); background: var(--brand-soft); }
 .measure .label { margin-block-end: .15rem; }

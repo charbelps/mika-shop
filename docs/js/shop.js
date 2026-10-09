@@ -317,6 +317,7 @@
         ${variants.length ? `<span class="label">${esc(t('shop.choose_option'))}</span>
           <div class="options" id="pp-options">${variants.map((v) => `<button type="button" class="opt" data-id="${v.id}" aria-pressed="false" ${v.stock > 0 ? '' : 'disabled'}>${esc(I18n.pick(v, 'label'))}</button>`).join('')}</div>` : ''}
         <div class="stock-line" id="pp-stock"></div>
+        <div id="pp-notify"></div>
         <div class="buy">
           <div class="buy-row">
             <div class="qty"><button type="button" id="q-minus" aria-label="−">−</button><input id="q" type="number" inputmode="numeric" min="1" value="1" aria-label="${esc(t('shop.qty'))}"><button type="button" id="q-plus" aria-label="+">+</button></div>
@@ -388,6 +389,7 @@
     $('#q-plus').addEventListener('click', () => { qty.value = Math.min(Math.max(1, maxQty()), Number(qty.value) + 1); });
     qty.addEventListener('change', () => { qty.value = Math.min(Math.max(1, maxQty()), Math.max(1, parseInt(qty.value, 10) || 1)); });
     update();
+    renderNotify(p, variants);
 
     $('#pp-add').addEventListener('click', () => {
       if (!window.Cart) return;
@@ -421,6 +423,69 @@
         }
       });
     }
+  }
+
+  // "Tell me when it's back" (F4): on a sold-out product, or a product with sold-out options, the
+  // customer leaves a phone (+ optional name). request_stock_alert saves it; Mika sees the list in
+  // the admin (Back in stock tab) and sends one WhatsApp when the item is back.
+  function renderNotify(p, variants) {
+    const box = $('#pp-notify');
+    const sold = p.has_variants ? variants.filter((v) => v.stock <= 0) : (p.stock > 0 ? [] : [null]);
+    if (!sold.length) { box.innerHTML = ''; return; }
+    const all = !inStock(p);
+    let me = {};
+    try { me = JSON.parse(localStorage.getItem('checkout:me')) || {}; } catch { me = {}; }
+    box.className = 'notify';
+    box.innerHTML = `
+      <button type="button" class="${all ? 'btn btn-block' : 'link-btn'}" id="nt-open" aria-expanded="false">${esc(t(all ? 'shop.notify_btn' : 'shop.notify_some'))}</button>
+      <form class="co-box notify-form" id="nt-form" novalidate hidden>
+        <p class="muted">${esc(t('shop.notify_help'))}</p>
+        ${p.has_variants ? `<div class="field"><label for="nt-option">${esc(t('shop.notify_option'))}</label>
+          <select id="nt-option">${sold.length > 1 ? `<option value="">${esc(t('co.choose'))}</option>` : ''}${sold.map((v) => `<option value="${v.id}">${esc(I18n.pick(v, 'label'))}</option>`).join('')}</select></div>` : ''}
+        <div class="field"><label for="nt-phone">${esc(t('shop.notify_phone'))}</label>
+          <input id="nt-phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" maxlength="25" placeholder="70 123 456" value="${esc(me.phone || '')}"></div>
+        <div class="field"><label for="nt-name">${esc(t('shop.notify_name'))}</label>
+          <input id="nt-name" type="text" autocomplete="name" maxlength="80" value="${esc(me.name || '')}"></div>
+        <div class="hp" aria-hidden="true"><label for="nt-website">Website</label><input id="nt-website" type="text" tabindex="-1" autocomplete="off"></div>
+        <div class="alert alert-error" id="nt-error" role="alert" hidden></div>
+        <button type="submit" class="btn btn-primary btn-block" id="nt-go">${esc(t('shop.notify_go'))}</button>
+        <p class="hint">${esc(t('shop.notify_privacy'))}</p>
+      </form>
+      <div class="alert alert-ok" id="nt-done" role="status" hidden></div>`;
+    const form = $('#nt-form');
+    const err = $('#nt-error');
+    $('#nt-open').addEventListener('click', (e) => {
+      form.hidden = !form.hidden;
+      e.currentTarget.setAttribute('aria-expanded', String(!form.hidden));
+      if (!form.hidden) (form.querySelector('select') || $('#nt-phone')).focus();
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.hidden = true;
+      form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
+      const phone = DB.normalizePhone($('#nt-phone').value);
+      const opt = $('#nt-option');
+      const variantId = opt ? Number(opt.value) || null : null;
+      const fail = (key, el) => { err.textContent = t(key); err.hidden = false; if (el) { el.setAttribute('aria-invalid', 'true'); el.focus(); } };
+      if (opt && !variantId) return fail('shop.notify_pick', opt);
+      if (!phone) return fail('co.phone_bad', $('#nt-phone'));
+      const btn = $('#nt-go');
+      btn.disabled = true;
+      const { error } = await DB.client.rpc('request_stock_alert', {
+        p_sku: p.sku, p_variant_id: variantId, p_phone: phone, p_name: $('#nt-name').value.trim(),
+        p_lang: I18n.lang, p_honeypot: $('#nt-website').value,
+      });
+      btn.disabled = false;
+      if (error) {
+        const code = (/[A-Z_]{6,}/.exec(error.message || '') || [''])[0];
+        return fail(code === 'INVALID_PHONE' ? 'co.phone_bad'
+          : t('shop.notify_err_' + code) !== 'shop.notify_err_' + code ? 'shop.notify_err_' + code : 'common.error_generic');
+      }
+      form.hidden = true;
+      $('#nt-open').hidden = true;
+      $('#nt-done').textContent = t('shop.notify_done');
+      $('#nt-done').hidden = false;
+    });
   }
 
   // Privacy page: Mika's text from settings (privacy_en / privacy_ar), or the standard text.

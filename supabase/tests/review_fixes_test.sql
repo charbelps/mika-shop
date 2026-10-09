@@ -132,8 +132,8 @@ select pg_temp.try('policies', 'every my_role() / auth.uid() in public policies 
   $q$select 1 from pg_policies where schemaname = 'public'
      and replace(replace(coalesce(qual, '') || ' ' || coalesce(with_check, ''),
                  'SELECT my_role() AS my_role', ''), 'SELECT auth.uid() AS uid', '') ~ '(my_role|uid)\(\)'$q$, 'rows:0');
-select pg_temp.try('policies', 'still 24 policies on public tables',
-  $q$select 1 from pg_policies where schemaname = 'public'$q$, 'rows:24');
+select pg_temp.try('policies', 'none of the 24 policies of 9 Oct was lost (later migrations add more)',
+  $q$select 1 where (select count(*) from pg_policies where schemaname = 'public') >= 24$q$, 'rows:1');
 
 select n, who, test, expected, got, (expected = got) as pass from _r order by (expected = got), n;
 rollback;
