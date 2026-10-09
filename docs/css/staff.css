@@ -220,6 +220,10 @@ legend { font-weight: 600; padding: 0 .3rem; }
 .chip-btn { min-height: 40px; padding: 0 .9rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
             font: inherit; cursor: pointer; }
 .chip-btn[aria-pressed=true] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 600; }
+/* chips that are links (admin Products / Categories / Import tabs) */
+a.chip-btn { display: inline-flex; align-items: center; gap: .35rem; color: var(--text); text-decoration: none; }
+.chip-btn[aria-current=page] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 600; }
+@media (max-width: 380px) { .nav a { font-size: .7rem; } }
 .od-pills { display: flex; flex-wrap: wrap; gap: .3rem; margin-block-end: .25rem; }
 .od-name { font-weight: 600; font-size: 1.1rem; margin: 0; }
 .od-phone { margin: 0 0 .5rem; text-align: start; }

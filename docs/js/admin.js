@@ -52,7 +52,7 @@
     const tab = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'products';
     TABS.forEach((n) => { $('#tab-' + n).hidden = n !== tab; });
     const navTab = tab === 'waiting' ? 'products' : tab;   // "Back in stock" lives under Products
-    document.querySelectorAll('.nav a[data-tab]').forEach((a) => {
+    document.querySelectorAll('.adm-tabs a[data-tab]').forEach((a) => {
       if (a.dataset.tab === navTab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     if (tab === 'products') loadProducts();

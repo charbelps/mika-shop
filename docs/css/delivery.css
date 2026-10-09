@@ -1,0 +1,29 @@
+/* Delivery screen (Phase 2). Linen Studio tokens come from packing.css (body.theme-linen). */
+.dv-main { max-width: 980px; }
+.dv-views { grid-template-columns: repeat(3, 1fr); max-width: 640px; }
+.dv-group { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1rem; margin-block-end: 1rem; }
+.dv-group > h2 { margin: 0 0 .25rem; font-size: 1.35rem; }
+.dv-group > .hint { margin-block: 0 .75rem; }
+.dv-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.dv-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .6rem .75rem; align-items: start;
+          padding: .65rem .7rem; border: 1px solid var(--line); border-radius: 12px; }
+.dv-row.no-box { grid-template-columns: 1fr; }
+.dv-row input[type=checkbox] { width: 24px; height: 24px; margin: .2rem 0 0; }
+.dv-what { min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
+.dv-what strong { font-size: 1.05rem; }
+.dv-what .meta { color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; }
+.dv-money { font-weight: 800; color: var(--warn); }
+.dv-money.paid { color: var(--ok); }
+.dv-ctl { grid-column: 1 / -1; min-width: 0; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.dv-row.no-box .dv-ctl { grid-column: 1; }
+.dv-ctl select, .dv-ctl input[type=text] { flex: 1 1 12rem; width: auto; min-width: 0; min-height: 44px; }
+.dv-ctl .btn { min-height: 44px; }
+.dv-acts { display: flex; flex-wrap: wrap; gap: .5rem; margin-block-start: .85rem; }
+.dv-acts .btn { min-height: 50px; }
+.dv-total { font-weight: 700; margin-block-start: .6rem; }
+.dv-cash-line { display: flex; justify-content: space-between; gap: 1rem; padding-block: .25rem; }
+.dv-cash-line.big { font-size: 1.15rem; font-weight: 800; border-block-start: 1px solid var(--line); margin-block-start: .35rem; padding-block-start: .5rem; }
+.dv-diff-bad { color: var(--danger); font-weight: 700; }
+.dv-log { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.dv-log th, .dv-log td { text-align: start; padding: .4rem .35rem; border-block-end: 1px solid var(--line); vertical-align: top; }
+.dv-table-wrap { overflow-x: auto; }

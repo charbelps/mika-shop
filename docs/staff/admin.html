@@ -34,15 +34,20 @@
     </header>
 
     <nav class="nav">
-      <a href="#products" data-tab="products"><span class="ico" aria-hidden="true">📦</span><span data-i18n="staff.nav_products"></span></a>
-      <a href="#categories" data-tab="categories"><span class="ico" aria-hidden="true">🗂️</span><span data-i18n="staff.nav_categories"></span></a>
-      <a href="#import" data-tab="import"><span class="ico" aria-hidden="true">⬆️</span><span data-i18n="staff.nav_import"></span></a>
-      <a href="prep.html"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
+      <a href="admin.html" aria-current="page" data-roles="ADMIN"><span class="ico" aria-hidden="true">📦</span><span data-i18n="staff.nav_products"></span></a>
+      <a href="prep.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
       <a href="packing.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">✅</span><span data-i18n="staff.nav_packing"></span></a>
+      <a href="delivery.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🛵</span><span data-i18n="staff.nav_delivery"></span></a>
       <a href="settings.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">⚙️</span><span data-i18n="staff.nav_settings"></span></a>
     </nav>
 
     <main class="main">
+      <!-- Products, categories and the import sheet: tabs of the Products menu item -->
+      <div class="toolbar chips-row adm-tabs">
+        <a class="chip-btn" href="#products" data-tab="products">📦 <span data-i18n="staff.nav_products"></span></a>
+        <a class="chip-btn" href="#categories" data-tab="categories">🗂️ <span data-i18n="staff.nav_categories"></span></a>
+        <a class="chip-btn" href="#import" data-tab="import">⬆️ <span data-i18n="staff.nav_import"></span></a>
+      </div>
       <!-- ================= PRODUCTS ================= -->
       <section id="tab-products" hidden>
         <div class="toolbar">

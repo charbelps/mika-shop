@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <!-- staff app on the phone home screen (needed for iPhone notifications) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#2f3d22">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Orders">
+  <title>Delivery</title>
+  <link rel="stylesheet" href="../css/staff.css">
+  <link rel="stylesheet" href="../css/packing.css">
+  <link rel="stylesheet" href="../css/delivery.css">
+  <link rel="stylesheet" href="../css/print.css" media="print">
+  <script src="../js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
+          integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
+          crossorigin="anonymous"></script>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/staff-auth.js"></script>
+</head>
+<!-- Delivery (Phase 2): who takes what, the company handover sheet, orders on the way, cash. -->
+<body class="auth-pending theme-linen">
+  <div class="app">
+    <header class="topbar">
+      <div class="who"><strong data-staff-name></strong><small data-staff-role></small></div>
+      <button type="button" class="btn btn-ghost btn-small" data-lang-toggle data-i18n="common.lang_toggle"></button>
+      <button type="button" class="btn btn-small" data-sign-out data-i18n="staff.sign_out"></button>
+    </header>
+    <nav class="nav">
+      <a href="admin.html" data-roles="ADMIN"><span class="ico" aria-hidden="true">📦</span><span data-i18n="staff.nav_products"></span></a>
+      <a href="prep.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
+      <a href="packing.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">✅</span><span data-i18n="staff.nav_packing"></span></a>
+      <a href="delivery.html" aria-current="page" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🛵</span><span data-i18n="staff.nav_delivery"></span></a>
+      <a href="settings.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">⚙️</span><span data-i18n="staff.nav_settings"></span></a>
+    </nav>
+    <main class="main dv-main">
+      <div class="toolbar pk-head">
+        <h1 data-i18n="dv.title"></h1>
+        <span class="pill" id="dv-live"></span>
+      </div>
+      <div class="pk-views dv-views" role="tablist">
+        <button type="button" class="pk-view" role="tab" data-view="send" aria-selected="true"><span data-i18n="dv.tab_send"></span> <span class="pk-count" id="dv-n-send"></span></button>
+        <button type="button" class="pk-view" role="tab" data-view="way" aria-selected="false"><span data-i18n="dv.tab_way"></span> <span class="pk-count" id="dv-n-way"></span></button>
+        <button type="button" class="pk-view" role="tab" data-view="cash" aria-selected="false"><span data-i18n="dv.tab_cash"></span></button>
+      </div>
+      <p class="pk-readonly hint" id="dv-readonly" hidden data-i18n="dv.read_only"></p>
+      <section id="dv-send" aria-live="polite"></section>
+      <section id="dv-way" hidden aria-live="polite"></section>
+      <section id="dv-cash" hidden aria-live="polite"></section>
+    </main>
+  </div>
+
+  <!-- small question box: cash collected / reason / cash received -->
+  <dialog class="sheet small" id="dv-dialog" aria-labelledby="dv-d-title">
+    <div class="sheet-head"><h2 id="dv-d-title"></h2></div>
+    <div class="sheet-body" id="dv-d-body"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn" data-close data-i18n="common.cancel"></button>
+      <button type="button" class="btn btn-primary" id="dv-d-go"></button>
+    </div>
+  </dialog>
+
+  <!-- company handover sheet: only this is printed (print.css) -->
+  <div id="manifest" class="slip manifest" aria-hidden="true"></div>
+  <script src="../js/delivery.js"></script>
+</body>
+</html>
