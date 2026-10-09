@@ -302,7 +302,8 @@
     "gift_no_area": "Gifts can't be sent to this area yet. Contact us on WhatsApp.",
     "err_GIFT_NEEDS_PREPAID": "Gifts are paid by Whish or OMT. Please choose one of them.",
     "err_GIFT_NEEDS_FEE": "Gifts can't be sent to this area yet.",
-    "err_INVALID_RECIPIENT_PHONE": "Please check the recipient's phone number."
+    "err_INVALID_RECIPIENT_PHONE": "Please check the recipient's phone number.",
+    "err_TOO_MANY_OPEN_ORDERS": "You already have {n} orders with us that haven't been delivered yet. Please wait until one of them arrives before placing a new one, or contact us and we'll be happy to help."
   },
   "ord": {
     "title": "Order received",
@@ -920,7 +921,9 @@
     "err_zone_names": "Fill in the governorate and the area name.",
     "tab_staff": "Staff",
     "f_delivery_company_name": "Delivery company name",
-    "h_delivery_company_name": "Printed on the handover sheet for the delivery company. Optional."
+    "h_delivery_company_name": "Printed on the handover sheet for the delivery company. Optional.",
+    "f_max_open_orders_per_phone": "Unfinished website orders allowed per phone number",
+    "h_max_open_orders_per_phone": "A phone number with this many orders not finished yet (not delivered, cancelled or returned) can't order again on the website until one is finished. Stops fake orders. Orders you enter in New order are never blocked. Empty or 0 = no limit."
   },
   "st": {
     "intro": "People who can log in to the staff screens. Deactivated people can no longer log in.",

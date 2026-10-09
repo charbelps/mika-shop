@@ -5,6 +5,11 @@
 -- =====================================================================
 begin;
 
+-- Since migration 32 the website allows only N unfinished orders per phone. These checks place
+-- many orders from one phone, so the limit is off inside this (rolled back) test; the limit
+-- itself is tested in open_orders_limit_test.sql.
+update public.settings set value = '' where key = 'max_open_orders_per_phone';
+
 create temp table _r (n serial, test text, expected text, got text);
 grant all on _r to anon; grant all on sequence _r_n_seq to anon;
 create temp table _v (k text primary key, v text);

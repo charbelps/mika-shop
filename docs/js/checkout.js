@@ -289,6 +289,9 @@
         if (code === 'OUT_OF_STOCK' || code === 'ITEM_UNAVAILABLE') {
           await Cart.refresh().catch(() => {});
           err.innerHTML = `${esc(t('co.err_stock'))} <a href="cart.html">${esc(t('cart.title'))}</a>`;
+        } else if (code === 'TOO_MANY_OPEN_ORDERS') {
+          // the limit comes from the server (Settings), never typed here
+          err.textContent = t('co.err_TOO_MANY_OPEN_ORDERS', { n: /^\d+$/.test(error.details || '') ? error.details : '' });
         } else {
           err.textContent = t('co.err_' + code) !== 'co.err_' + code ? t('co.err_' + code) : t('common.error_generic');
         }
