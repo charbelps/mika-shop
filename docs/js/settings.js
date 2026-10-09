@@ -54,7 +54,7 @@
       { key: 'whish_number', dir: 'ltr' }, { key: 'omt_details', area: true, dir: 'auto' },
       { key: 'unpaid_cancel_hours', type: 'number' }] },
     { id: 'orders', fields: [{ key: 'order_prefix', dir: 'ltr', max: 6 }, { key: 'low_stock_threshold', type: 'number' },
-      { key: 'fee_tbc_enabled', options: ['', 'on'] }] },
+      { key: 'fee_tbc_enabled', options: ['', 'on'] }, { key: 'delivery_company_name', max: 80 }] },
     { id: 'policies', fields: [
       { key: 'return_policy_en', area: true }, { key: 'return_policy_ar', area: true, dir: 'rtl' },
       { key: 'privacy_en', area: true }, { key: 'privacy_ar', area: true, dir: 'rtl' }] },
