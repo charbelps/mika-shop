@@ -11,9 +11,11 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Orders">
-  <title>Packing</title>
+  <title>Dashboard</title>
   <link rel="stylesheet" href="../css/staff.css">
   <link rel="stylesheet" href="../css/packing.css">
+  <link rel="stylesheet" href="../css/delivery.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
   <script src="../js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
           integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF"
@@ -22,6 +24,7 @@
   <script src="../js/db.js"></script>
   <script src="../js/staff-auth.js"></script>
 </head>
+<!-- Owner dashboard (Phase 3): sales, orders by status, best sellers, slow items, low stock, cash owed, governorates. -->
 <body class="auth-pending theme-linen">
   <div class="app">
     <header class="topbar">
@@ -32,26 +35,27 @@
     <nav class="nav">
       <a href="admin.html" data-roles="ADMIN"><span class="ico" aria-hidden="true">📦</span><span data-i18n="staff.nav_products"></span></a>
       <a href="prep.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🧾</span><span data-i18n="staff.nav_orders"></span></a>
-      <a href="packing.html" aria-current="page" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">✅</span><span data-i18n="staff.nav_packing"></span></a>
+      <a href="packing.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">✅</span><span data-i18n="staff.nav_packing"></span></a>
       <a href="delivery.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">🛵</span><span data-i18n="staff.nav_delivery"></span></a>
-      <a href="dashboard.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">📊</span><span data-i18n="staff.nav_dashboard"></span></a>
+      <a href="dashboard.html" aria-current="page" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">📊</span><span data-i18n="staff.nav_dashboard"></span></a>
       <a href="settings.html" data-roles="ADMIN OWNER"><span class="ico" aria-hidden="true">⚙️</span><span data-i18n="staff.nav_settings"></span></a>
     </nav>
-    <main class="main pk-main">
+    <main class="main db-main">
       <div class="toolbar pk-head">
-        <h1 data-i18n="pk.title"></h1>
-        <span class="pill" id="pk-live"></span>
+        <h1 data-i18n="db.title"></h1>
+        <button type="button" class="btn btn-small" id="db-refresh" data-i18n="db.refresh"></button>
       </div>
-      <p class="hint" id="pk-intro" data-i18n="pk.intro"></p>
-      <div class="pk-views" role="tablist">
-        <button type="button" class="pk-view" role="tab" data-view="pick" aria-selected="true"><span data-i18n="pk.view_pick"></span> <span class="pk-count" id="pk-n-pick"></span></button>
-        <button type="button" class="pk-view" role="tab" data-view="cards" aria-selected="false"><span data-i18n="pk.view_cards"></span> <span class="pk-count" id="pk-n-cards"></span></button>
+      <p class="hint" id="db-updated"></p>
+      <section class="db-kpis" id="db-kpis" aria-label="Sales"></section>
+      <div class="toolbar chips-row db-range" role="group" aria-labelledby="db-range-label">
+        <span id="db-range-label" class="hint" data-i18n="db.range"></span>
+        <button type="button" class="chip-btn" data-days="7" aria-pressed="false"></button>
+        <button type="button" class="chip-btn" data-days="30" aria-pressed="true"></button>
+        <button type="button" class="chip-btn" data-days="90" aria-pressed="false"></button>
       </div>
-      <p class="pk-readonly hint" id="pk-readonly" hidden data-i18n="pk.read_only"></p>
-      <section id="pk-pick" class="pk-pick" aria-live="polite"></section>
-      <section id="pk-cards" class="pk-cards" hidden aria-live="polite"></section>
+      <div class="db-grid" id="db-grid" aria-live="polite"></div>
     </main>
   </div>
-  <script src="../js/packing.js"></script>
+  <script src="../js/dashboard.js"></script>
 </body>
 </html>

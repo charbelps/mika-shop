@@ -3,7 +3,8 @@
 //   Other pages: const me = await StaffAuth.require(['ADMIN']);   -> { user, role, name }
 (function () {
   // Where each role lands after logging in.
-  const HOME = { ADMIN: 'admin.html', OWNER: 'prep.html', DRIVER: 'driver.html' };
+  // OWNER lands on the dashboard since it exists (12b #5)
+  const HOME = { ADMIN: 'admin.html', OWNER: 'dashboard.html', DRIVER: 'driver.html' };
   const never = () => new Promise(() => {}); // stop the page while redirecting
 
   async function getRole() {

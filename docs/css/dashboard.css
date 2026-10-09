@@ -1,0 +1,25 @@
+/* Owner dashboard (Phase 3). Linen Studio tokens come from packing.css (body.theme-linen).
+   Stat tiles: sentence-case label, value in the body sans (never the display serif), sub-line. */
+.db-main { max-width: 1100px; }
+.db-kpis { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); margin-block: .25rem 1rem; }
+.db-tile { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: .9rem 1rem; }
+.db-tile p { margin: 0; }
+.db-tile-label { color: var(--muted); font-weight: 600; }
+.db-tile-value { font-family: var(--font); font-weight: 700; font-size: 1.9rem; color: var(--text); line-height: 1.2; margin-block: .2rem; }
+.db-tile-sub { color: var(--muted); font-size: .92rem; }
+.db-range { align-items: center; }
+.db-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); align-items: start; }
+.db-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1rem; min-width: 0; }
+.db-card h2 { margin: 0 0 .25rem; font-size: 1.3rem; }
+.db-card > .hint { margin-block: 0 .6rem; }
+.db-period { margin: .25rem 0 0; font-size: 1.05rem; }
+.db-period strong { font-size: 1.4rem; }
+.db-sub { margin: .25rem 0 .35rem; color: var(--muted); font-weight: 600; font-size: .92rem; }
+.db-pills { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem .9rem; }
+.db-pills a { color: inherit; text-decoration: none; }
+.db-table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.db-table th, .db-table td { text-align: start; padding: .45rem .35rem; border-block-end: 1px solid var(--line); vertical-align: top; }
+.db-table th { color: var(--muted); font-weight: 600; font-size: .85rem; }
+.db-table .num { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.db-table .meta { color: var(--muted); font-size: .8rem; }
+.db-table .bad { color: var(--danger); font-weight: 700; }
