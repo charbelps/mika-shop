@@ -267,6 +267,8 @@
   // C1: "fee to be confirmed" order whose delivery fee Mika hasn't set yet
   const feePill = (o) => (o.fee_tbc && !o.fee_set_at ? ` <span class="pill pill-warn" title="${esc(t('prep.fee_tbc_hint'))}">${esc(t('prep.fee_tbc'))}</span>` : '');
   const newPill = (o) => (o.is_first_order ? ` <span class="pill pill-warn" title="${esc(t('prep.new_customer_hint'))}">${esc(t('prep.new_customer'))}</span>` : '');
+  // F6: delivered to someone else, paid by Whish / OMT
+  const giftPill = (o) => (o.is_gift ? ` <span class="pill pill-gift">${esc(t('prep.gift'))}</span>` : '');
   function statusPill(s) {
     const cls = s === 'CANCELLED' || s === 'RETURNED' ? 'pill-off' : s === 'NEW' ? 'pill-danger' : s === 'PACKED' ? 'pill-ok' : '';
     return `<span class="pill ${cls}">${esc(t('status.' + s))}</span>`;
@@ -297,7 +299,7 @@
   async function load() {
     const reqId = ++state.req;
     let q = DB.client.from('orders')
-      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source,is_first_order,fee_tbc,fee_set_at', { count: 'exact' })
+      .select('id,order_no,created_at,name,phone,district,total,payment_method,payment_status,status,source,is_first_order,fee_tbc,fee_set_at,is_gift', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(state.page * PAGE, state.page * PAGE + PAGE - 1);
     if (state.tab === 'todo') q = q.in('status', ['NEW', 'CONFIRMED']);
@@ -330,7 +332,7 @@
       b.innerHTML = `<div class="body">
           <div class="title"><span dir="ltr">${esc(o.order_no)}</span> · ${esc(o.name)}</div>
           <div class="meta">${esc(when(o.created_at))} · ${esc(o.district)}</div>
-          <div>${statusPill(o.status)} ${payPill(o)}${srcPill(o)}${newPill(o)}${feePill(o)}</div>
+          <div>${statusPill(o.status)} ${payPill(o)}${giftPill(o)}${srcPill(o)}${newPill(o)}${feePill(o)}</div>
         </div>
         <div class="end"><strong>${money(o.total)}</strong></div>`;
       b.addEventListener('click', () => open(o.id));
@@ -368,23 +370,38 @@
     const items = o.order_items || [];
     const awaiting = o.payment_status === 'AWAITING' && !['CANCELLED', 'RETURNED'].includes(o.status);
     const done = ['CANCELLED', 'RETURNED'].includes(o.status);
+    const mapLink = o.location_url ? `<a class="btn btn-small" href="${esc(o.location_url)}" target="_blank" rel="noopener noreferrer">📍 ${esc(t('prep.map'))}</a>` : '';
+    const addressHtml = `<p>${esc(o.town)}, ${esc(o.district)} (${esc(o.governorate)})<br>${esc(o.address)}${o.landmark ? `<br><span class="meta">${esc(o.landmark)}</span>` : ''}</p>`;
     $('#od-body').innerHTML = `
-      <div class="od-pills">${statusPill(o.status)} ${payPill(o)}${srcPill(o)}${newPill(o)}${feePill(o)} ${canEdit ? '' : `<span class="pill">${esc(t('prep.readonly'))}</span>`}</div>
+      <div class="od-pills">${statusPill(o.status)} ${payPill(o)}${giftPill(o)}${srcPill(o)}${newPill(o)}${feePill(o)} ${canEdit ? '' : `<span class="pill">${esc(t('prep.readonly'))}</span>`}</div>
       <p class="meta">${esc(when(o.created_at))}</p>
       ${o.is_first_order ? `<p class="hint">${esc(t('prep.new_customer_hint'))}</p>` : ''}
       ${o.cancel_reason ? `<div class="alert alert-warn">${esc(t('prep.cancelled_because', { reason: o.cancel_reason }))}</div>` : ''}
 
-      <fieldset><legend>${esc(t('prep.customer'))}</legend>
+      ${o.is_gift ? `<fieldset class="od-gift"><legend>${esc(t('prep.gift_title'))}</legend>
+        <p class="od-name">${esc(o.recipient_name)}</p>
+        <p dir="ltr" class="od-phone">${esc(o.recipient_phone)}</p>
+        <div class="od-links">
+          <a class="btn btn-small" href="tel:${esc(o.recipient_phone)}">📞 ${esc(t('prep.call'))}</a>
+          <a class="btn btn-small" href="https://wa.me/${esc(String(o.recipient_phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener">💬 ${esc(t('prep.whatsapp'))}</a>
+          ${mapLink}
+        </div>
+        ${addressHtml}
+        ${o.gift_note ? `<p class="od-card" dir="auto">${esc(t('prep.gift_note', { note: o.gift_note }))}</p>` : ''}
+        <p class="hint">${esc(t('prep.gift_hint'))}</p>
+      </fieldset>` : ''}
+
+      <fieldset><legend>${esc(t(o.is_gift ? 'prep.gift_buyer' : 'prep.customer'))}</legend>
         <p class="od-name">${esc(o.name)}</p>
         <p dir="ltr" class="od-phone">${esc(o.phone)}</p>
         <div class="od-links">
           <a class="btn btn-small" href="tel:${esc(o.phone)}">📞 ${esc(t('prep.call'))}</a>
           <a class="btn btn-small" href="https://wa.me/${esc(digits)}" target="_blank" rel="noopener">💬 ${esc(t('prep.whatsapp'))}</a>
-          ${o.location_url ? `<a class="btn btn-small" href="${esc(o.location_url)}" target="_blank" rel="noopener noreferrer">📍 ${esc(t('prep.map'))}</a>` : ''}
+          ${o.is_gift ? '' : mapLink}
           ${o._wa ? `<a class="btn btn-small" href="${esc(o._wa.href)}" target="_blank" rel="noopener">${esc(t('prep.whatsapp_status'))}</a>` : ''}
         </div>
         ${o._wa ? `<p class="hint" id="od-wa-lang">${esc(o._wa.note)}</p>` : ''}
-        <p>${esc(o.town)}, ${esc(o.district)} (${esc(o.governorate)})<br>${esc(o.address)}${o.landmark ? `<br><span class="meta">${esc(o.landmark)}</span>` : ''}</p>
+        ${o.is_gift ? '' : addressHtml}
       </fieldset>
 
       <fieldset><legend>${esc(t('prep.items'))}</legend>
@@ -497,33 +514,45 @@
   });
 
   // ---------- packing slip (bilingual, print.css shows only .slip) ----------
+  // Gift (F6): "Deliver to" = the recipient, "From" = the buyer, the card message, and NO price
+  // anywhere (it travels with the present). Gifts are prepaid: PAID, or "not paid: don't send".
   function printSlip(o) {
     const slip = $('#slip');
+    const gift = !!o.is_gift;
     const c = DB.amountToCollect(o);
-    const collect = c.kind !== 'paid';
+    const collect = gift ? o.payment_status !== 'PAID' : c.kind !== 'paid';
     const amount = I18n.money(o.total, S.currency);
-    const collectHtml = c.kind === 'total'
+    const collectHtml = gift
+      ? esc(t(o.payment_status === 'PAID' ? 'prep.slip_paid' : 'prep.slip_gift_unpaid'))
+      : c.kind === 'total'
       ? `${esc(t('prep.slip_collect'))}<div class="slip-amount"><bdi>${esc(I18n.money(c.amount, S.currency))}</bdi></div>${c.feePending ? `<div>${esc(t('prep.slip_fee_tbc'))}</div>` : ''}`
       : c.kind === 'fee'
         ? `${esc(t('prep.slip_items_paid'))}<br>${esc(t('prep.slip_collect_fee'))}<div class="slip-amount">${c.amount == null ? esc(t('prep.slip_fee_tbc_amount')) : `<bdi>${esc(I18n.money(c.amount, S.currency))}</bdi>`}</div>`
         : esc(t('prep.slip_paid'));
     const shop = [S.shop_name_en, S.shop_name_ar].filter(Boolean).join(' · ');
+    const who = gift
+      ? `<tr><th>${esc(t('prep.slip_to'))}</th><td><strong>${esc(o.recipient_name)}</strong></td></tr>
+        <tr><th>${esc(t('prep.slip_phone'))}</th><td dir="ltr">${esc(o.recipient_phone)}</td></tr>`
+      : `<tr><th>${esc(t('prep.slip_customer'))}</th><td>${esc(o.name)}</td></tr>
+        <tr><th>${esc(t('prep.slip_phone'))}</th><td dir="ltr">${esc(o.phone)}</td></tr>`;
     slip.innerHTML = `
       <div class="slip-head"><div class="slip-shop">${esc(shop)}</div>
         <div><span class="slip-label">${esc(t('prep.slip_order'))}</span> <strong class="slip-no" dir="ltr">${esc(o.order_no)}</strong></div>
         <div><span class="slip-label">${esc(t('prep.slip_date'))}</span> ${esc(new Date(o.created_at).toLocaleString('en-GB'))}</div></div>
+      ${gift ? `<div class="slip-gift">${esc(t('prep.slip_gift'))}</div>` : ''}
       <table class="slip-to"><tbody>
-        <tr><th>${esc(t('prep.slip_customer'))}</th><td>${esc(o.name)}</td></tr>
-        <tr><th>${esc(t('prep.slip_phone'))}</th><td dir="ltr">${esc(o.phone)}</td></tr>
+        ${who}
         ${o.source && o.source !== 'WEBSITE' ? `<tr><th>${esc(t('prep.slip_source'))}</th><td>${esc(t('prep.slip_src_' + o.source))}</td></tr>` : ''}
         <tr><th>${esc(t('prep.slip_address'))}</th><td>${esc(o.town)}, ${esc(o.district)} (${esc(o.governorate)})<br>${esc(o.address)}${o.landmark ? '<br>' + esc(o.landmark) : ''}</td></tr>
+        ${gift ? `<tr><th>${esc(t('prep.slip_from'))}</th><td>${esc(o.name)}</td></tr>` : ''}
       </tbody></table>
       <table class="slip-items"><thead><tr><th>${esc(t('prep.slip_item'))}</th><th>${esc(t('prep.slip_qty'))}</th></tr></thead><tbody>
         ${(o.order_items || []).map((i) => `<tr><td>${esc(i.name_en)}${i.label ? ' (' + esc(i.label) + ')' : ''}
           ${i.name_ar ? `<div dir="rtl" lang="ar">${esc(i.name_ar)}${i.label_ar ? ' (' + esc(i.label_ar) + ')' : ''}</div>` : ''}
           <div class="slip-sku" dir="ltr">${esc(i.sku)}</div></td><td class="slip-qty">${i.qty}</td></tr>`).join('')}
       </tbody></table>
-      <div class="slip-total"><span>${esc(t('prep.slip_total'))}</span> <bdi>${esc(amount)}</bdi></div>
+      ${gift && o.gift_note ? `<div class="slip-card"><div class="slip-label">${esc(t('prep.slip_card'))}</div>${esc(o.gift_note)}</div>` : ''}
+      ${gift ? '' : `<div class="slip-total"><span>${esc(t('prep.slip_total'))}</span> <bdi>${esc(amount)}</bdi></div>`}
       <div class="slip-collect ${collect ? '' : 'paid'}">${collectHtml}</div>`;
     window.print();
   }

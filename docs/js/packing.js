@@ -50,6 +50,7 @@
     const my = ++req;
     const { data, error } = await DB.client.from('orders')
       .select('id,order_no,created_at,name,town,district,total,delivery_fee,payment_method,payment_status,status,source,is_first_order,notes,fee_tbc,fee_set_at,' +
+              'is_gift,recipient_name,gift_note,' +
               'order_items(id,sku,variant_id,name_en,name_ar,label,label_ar,qty,picked,checked)')
       .in('status', ['NEW', 'CONFIRMED'])
       .or('payment_method.eq.COD,payment_status.eq.PAID')
@@ -116,7 +117,9 @@
         <header class="pk-card-head">
           <div>
             <h2 dir="ltr">${esc(o.order_no)}</h2>
-            <p class="pk-who" dir="auto">${esc(o.name)}</p>
+            ${o.is_gift
+              ? `<p class="pk-who" dir="auto">${esc(t('pk.gift_to', { name: o.recipient_name }))}</p><p class="hint" dir="auto">${esc(t('pk.gift_from', { name: o.name }))}</p>`
+              : `<p class="pk-who" dir="auto">${esc(o.name)}</p>`}
             <p class="hint">${esc(o.town)}, ${esc(o.district)} · ${esc(when(o.created_at))}</p>
           </div>
           <div class="pk-pay ${c.kind === 'paid' ? 'paid' : 'collect'}">${c.kind === 'paid' ? esc(t('pk.paid'))
@@ -124,11 +127,13 @@
             : `${esc(t('pk.collect'))} ${money(c.amount)}${c.feePending ? `<br><small>${esc(t('pk.plus_fee_tbc'))}</small>` : ''}`}</div>
         </header>
         <div class="od-pills">
+          ${o.is_gift ? `<span class="pill pill-gift">${esc(t('prep.gift'))}</span>` : ''}
           ${o.fee_tbc && !o.fee_set_at ? `<span class="pill pill-warn" title="${esc(t('prep.fee_tbc_hint'))}">${esc(t('prep.fee_tbc'))}</span>` : ''}
           ${o.is_first_order ? `<span class="pill pill-warn" title="${esc(t('prep.new_customer_hint'))}">${esc(t('prep.new_customer'))}</span>` : ''}
           ${o.source && o.source !== 'WEBSITE' ? `<span class="pill">${esc(t('prep.src_' + o.source))}</span>` : ''}
           <span class="pill">${esc(t('status.' + o.status))}</span>
         </div>
+        ${o.is_gift ? `<p class="pk-giftcard" dir="auto">${esc(o.gift_note ? t('pk.card', { note: o.gift_note }) : t('pk.no_card'))}</p>` : ''}
         ${o.notes ? `<p class="pk-notes" dir="auto">📝 ${esc(o.notes)}</p>` : ''}
         <ul class="pk-list">${o.order_items.map((i) => `<li class="pk-row${i.checked ? ' done' : ''}">
           ${tickBox(i.checked, `data-check="${i.id}" data-order="${o.id}" aria-label="${esc(t('pk.tick_checked', { name: itemName(i) }))}"`)}

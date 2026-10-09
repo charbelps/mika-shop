@@ -311,3 +311,8 @@ input[aria-invalid=true], select[aria-invalid=true] { border-color: var(--danger
 .w-who { min-width: 0; flex: 1 1 12rem; }
 .w-who .meta { color: var(--muted); font-size: .85rem; }
 .w-acts { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+/* ---------- gift orders (F6) ---------- */
+.pill-gift { background: var(--brand-soft); color: var(--brand); }
+fieldset.od-gift { border: 2px solid var(--brand); }
+.od-card { margin: .25rem 0 .5rem; padding: .55rem .75rem; border: 1px dashed var(--brand); border-radius: var(--radius); white-space: pre-line; }

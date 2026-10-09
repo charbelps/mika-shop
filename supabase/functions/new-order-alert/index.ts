@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
 
   try {
     const [{ data: order, error: orderError }, { data: cur, error: currencyError }] = await Promise.all([
-      db.from('orders').select('id,order_no,name,district,total,payment_method,source,is_first_order,fee_tbc,order_items(qty)').eq('id', orderId).single(),
+      db.from('orders').select('id,order_no,name,district,total,payment_method,source,is_first_order,fee_tbc,is_gift,order_items(qty)').eq('id', orderId).single(),
       db.from('settings').select('value').eq('key', 'currency').maybeSingle(),
     ]);
     if (orderError) throw orderError;

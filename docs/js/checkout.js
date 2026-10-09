@@ -131,6 +131,55 @@
         <span><strong>${esc(t('co.pay_' + m.code))}</strong>
         <span class="pay-info" dir="auto">${esc(m.info)}${m.code !== 'COD' && hours > 0 ? ' ' + esc(Shop.businessText('pay_deadline', 'co.pay_within', { hours })) : ''}</span></span>
       </label>`).join('');
+    // ---------- gift (F6): delivered to someone else, paid by Whish / OMT (12b #30) ----------
+    // Offered only when Whish or OMT is. The buyer stays "Your details"; the address below
+    // becomes the recipient's (it starts empty; the buyer's remembered address comes back
+    // if the box is unticked).
+    const giftBox = $('#co-gift-box');
+    giftBox.hidden = methods.length < 2;
+    const giftOn = () => !giftBox.hidden && $('#co-gift').checked;
+    const ADDR = ['town', 'building', 'floor', 'street', 'landmark', 'location_url'];
+    let ownAddress = null;
+    function setPayments() {
+      const on = giftOn();
+      form.querySelectorAll('[name=payment]').forEach((r) => {
+        if (r.value !== 'COD') return;
+        r.disabled = on;
+        r.closest('.pay-opt').classList.toggle('off', on);
+        if (on && r.checked) {
+          r.checked = false;
+          form.querySelector('[name=payment]:not([value=COD])').checked = true;
+        }
+      });
+      $('#co-gift-pay').hidden = !on;
+    }
+    $('#co-gift').addEventListener('change', () => {
+      const on = giftOn();
+      $('#co-gift-fields').hidden = !on;
+      $('#co-addr-title').textContent = t(on ? 'co.recipient_address' : 'co.delivery_address');
+      if (on) {
+        ownAddress = { zone: disSel.value, gov: govSel.value, ...Object.fromEntries(ADDR.map((k) => [k, form[k].value])) };
+        ADDR.forEach((k) => { form[k].value = ''; });
+        govSel.value = ''; fillDistricts(); disSel.disabled = true;
+      } else if (ownAddress) {
+        ADDR.forEach((k) => { if (!form[k].value.trim()) form[k].value = ownAddress[k]; });
+        if (!govSel.value && ownAddress.gov) { govSel.value = ownAddress.gov; fillDistricts(); disSel.value = ownAddress.zone; }
+      }
+      setPayments();
+      updateTotals();
+      if (on) $('#co-gift-name').focus();
+    });
+    const giftPhoneHint = $('#co-gift-phone-hint');
+    function checkGiftPhone() {
+      const raw = form.gift_phone.value.trim();
+      const n = normalizePhone(raw);
+      if (!raw) { giftPhoneHint.textContent = ''; giftPhoneHint.className = 'hint'; }
+      else if (n) { giftPhoneHint.textContent = '✓ ' + n; giftPhoneHint.className = 'hint ok'; }
+      else { giftPhoneHint.textContent = t('co.phone_bad'); giftPhoneHint.className = 'hint bad'; }
+      return n;
+    }
+    form.gift_phone.addEventListener('input', checkGiftPhone);
+
     const deliveryNote = Shop.optionalBusinessText('delivery_payment');
     if (deliveryNote) { $('#co-business-note').textContent = deliveryNote; $('#co-business-note').hidden = false; }
     const checkoutNote = Shop.optionalBusinessText('checkout_note');
@@ -166,11 +215,12 @@
       let fee = null;
       if (!z) {
         feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="muted">${esc(t('co.choose_area'))}</span>`;
-      } else if (z.fee == null && feeTbc) {
+      } else if (z.fee == null && feeTbc && !giftOn()) {
         fee = 0;
         feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="muted">${esc(t('co.fee_tbc'))}</span>`;
       } else if (z.fee == null) {
-        feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="bad">${esc(t('co.no_delivery'))}</span>`;
+        // a gift needs the area's fee: the recipient never pays anything
+        feeRow.innerHTML = `<span>${esc(t('co.delivery'))}</span><span class="bad">${esc(t(feeTbc ? 'co.gift_no_area' : 'co.no_delivery'))}</span>`;
       } else {
         fee = Number(z.fee);
         const eta = z.eta_days ? ` <span class="muted">(${esc(t('co.eta', { days: z.eta_days }))})</span>` : '';
@@ -178,8 +228,8 @@
       }
       $('#co-subtotal').innerHTML = moneyHtml(subtotal);
       $('#co-total').innerHTML = fee == null ? '—' : moneyHtml(subtotal + fee);
-      $('#co-fee-note').hidden = !(z && z.fee == null && feeTbc);
-      submit.disabled = !!z && z.fee == null && !feeTbc;
+      $('#co-fee-note').hidden = !(z && z.fee == null && feeTbc && !giftOn());
+      submit.disabled = !!z && z.fee == null && (!feeTbc || giftOn());
     }
     updateTotals();
 
@@ -196,6 +246,10 @@
       if (!form.building.value.trim()) need.push('building');
       const loc = form.location_url.value.trim();
       if (loc && !/^https?:\/\/\S+$/i.test(loc)) need.push('location_url');
+      const gift = giftOn();
+      const giftPhone = gift ? checkGiftPhone() : null;
+      if (gift && !form.gift_name.value.trim()) need.push('gift_name');
+      if (gift && !giftPhone) need.push('gift_phone');
       form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
       if (need.length) {
         need.forEach((n) => form[n] && form[n].setAttribute('aria-invalid', 'true'));
@@ -204,7 +258,7 @@
         form[need[0]] && form[need[0]].focus();
         return;
       }
-      if (z.fee == null && !feeTbc) { err.textContent = t('co.no_delivery'); err.hidden = false; return; }
+      if (z.fee == null && (!feeTbc || gift)) { err.textContent = t(gift && feeTbc ? 'co.gift_no_area' : 'co.no_delivery'); err.hidden = false; return; }
 
       const address = [
         form.building.value.trim() && 'Bldg: ' + form.building.value.trim(),
@@ -216,6 +270,7 @@
           name: form.name.value.trim(), phone, zone_id: z.id, town: form.town.value.trim(), address,
           landmark: form.landmark.value.trim(), location_url: loc,
           lang: I18n.lang, // the WhatsApp status updates go out in this language
+          ...(gift ? { gift: { name: form.gift_name.value.trim(), phone: giftPhone, note: form.gift_note.value.trim() } } : {}),
         },
         p_items: lines().map((l) => ({ sku: l.sku, variant_id: l.variant_id || null, qty: l.qty })),
         p_payment: form.payment.value,
@@ -242,7 +297,9 @@
         err.scrollIntoView({ block: 'center' });
         return;
       }
-      if (form.remember.checked) {
+      if (form.remember.checked && gift) {
+        saveMe({ ...loadMe(), name: form.name.value.trim(), phone: form.phone.value.trim() }); // keep the buyer's own address
+      } else if (form.remember.checked) {
         saveMe({ name: form.name.value.trim(), phone: form.phone.value.trim(), zone_id: z.id, town: form.town.value.trim(),
           building: form.building.value.trim(), floor: form.floor.value.trim(), street: form.street.value.trim(), landmark: form.landmark.value.trim() });
       } else {
@@ -279,6 +336,7 @@
       <div class="ord-head">
         <div class="ord-check" aria-hidden="true">✓</div>
         <h1>${esc(t('ord.thanks'))}</h1>
+        ${o && o.is_gift ? `<p class="gift-line">${esc(t('ord.gift_for', { name: o.recipient_name || '' }))}</p>` : ''}
         <p class="muted">${esc(t('ord.your_number'))}</p>
         ${Shop.optionalBusinessText('order_confirmation') ? `<p class="muted" dir="auto">${esc(Shop.optionalBusinessText('order_confirmation'))}</p>` : ''}
         <div class="ord-no" dir="ltr">${esc(no)}</div>

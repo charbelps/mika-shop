@@ -266,6 +266,12 @@ input[dir=ltr] { text-align: start; }
            margin-block-end: .5rem; cursor: pointer; }
 .pay-opt:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
 .pay-opt input { width: 22px; height: 22px; min-height: 0; margin-block-start: .15rem; flex: none; }
+.pay-opt.off { opacity: .45; cursor: not-allowed; }   /* cash on delivery while "gift" is ticked */
+/* gift (F6) */
+#co-gift-box .check-line { margin-block: 0; font-weight: 600; }
+#co-gift-fields { margin-block-start: .9rem; }
+#co-gift-fields > .hint { margin-block: 0 .9rem; }
+.gift-line { font-weight: 600; color: var(--brand); margin-block: .25rem .5rem; }
 .pay-info { display: block; color: var(--muted); font-size: .9rem; white-space: pre-line; }
 .check-line { display: flex; gap: .6rem; align-items: center; margin-block: .5rem 1rem; }
 .check-line input { width: 22px; height: 22px; min-height: 0; }

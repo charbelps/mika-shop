@@ -37,8 +37,29 @@
         </div>
       </section>
 
+      <!-- Gift (F6): shown only when Whish or OMT is offered (gifts are paid before delivery) -->
+      <section class="co-box" id="co-gift-box" hidden>
+        <label class="check-line"><input type="checkbox" id="co-gift" name="gift"> <span data-i18n="co.gift_toggle"></span></label>
+        <div id="co-gift-fields" hidden>
+          <p class="hint" data-i18n="co.gift_help"></p>
+          <div class="field">
+            <label for="co-gift-name" data-i18n="co.f_gift_name"></label>
+            <input id="co-gift-name" name="gift_name" type="text" maxlength="80" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="co-gift-phone" data-i18n="co.f_gift_phone"></label>
+            <input id="co-gift-phone" name="gift_phone" type="tel" inputmode="tel" dir="ltr" maxlength="25" autocomplete="off" placeholder="70 123 456">
+            <p class="hint" id="co-gift-phone-hint"></p>
+          </div>
+          <div class="field">
+            <label for="co-gift-note" data-i18n="co.f_gift_note"></label>
+            <textarea id="co-gift-note" name="gift_note" maxlength="300" rows="2" dir="auto" data-i18n-placeholder="co.gift_note_ph"></textarea>
+          </div>
+        </div>
+      </section>
+
       <section class="co-box">
-        <h2 data-i18n="co.delivery_address"></h2>
+        <h2 id="co-addr-title" data-i18n="co.delivery_address"></h2>
         <div class="grid-2">
           <div class="field">
             <label for="co-gov" data-i18n="co.f_governorate"></label>
@@ -86,6 +107,7 @@
       <section class="co-box">
         <h2 data-i18n="co.payment"></h2>
         <div id="co-payments"></div>
+        <p class="hint" id="co-gift-pay" hidden data-i18n="co.gift_pay_note"></p>
         <p class="hint" id="co-business-note" dir="auto" hidden></p>
       </section>
       </div>

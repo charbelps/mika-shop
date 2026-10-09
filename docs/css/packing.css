@@ -74,6 +74,7 @@ body.theme-linen h1, body.theme-linen h2 { font-family: var(--font-display); fon
 .pk-pay.paid { background: var(--ok-soft); color: var(--ok); font-size: .95rem; }
 .pk-card .od-pills { display: flex; flex-wrap: wrap; gap: .35rem; }
 .pk-notes { margin: 0; padding: .55rem .75rem; border-radius: var(--radius); background: var(--warn-soft); white-space: pre-line; }
+.pk-giftcard { margin: 0; padding: .55rem .75rem; border-radius: var(--radius); border: 1px dashed var(--brand); white-space: pre-line; font-weight: 600; }
 .pk-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; border-block-start: 1px solid var(--line); padding-block-start: .75rem; }
 .pk-progress { flex: 1 1 100%; color: var(--muted); font-size: .92rem; }
 .pk-card-foot .btn { min-height: 48px; display: inline-flex; align-items: center; }

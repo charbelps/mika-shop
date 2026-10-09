@@ -19,3 +19,6 @@ body { background: #fff !important; color: #000; font-family: 'IBM Plex Sans Ara
 .slip-collect { border: 3px solid #000; padding: 4mm; text-align: center; font-size: 13pt; font-weight: 700; }
 .slip-collect .slip-amount { font-size: 24pt; margin-top: 1mm; }
 .slip-collect.paid { border-style: dashed; }
+/* gift (F6): no prices anywhere on the slip, a card message box */
+.slip-gift { border: 2px solid #000; text-align: center; font-size: 14pt; font-weight: 700; padding: 2mm; margin-bottom: 4mm; }
+.slip-card { border: 1px dashed #000; padding: 3mm; margin-bottom: 4mm; font-size: 12pt; white-space: pre-line; }

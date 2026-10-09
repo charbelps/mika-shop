@@ -223,7 +223,7 @@
     "notify_err_ITEM_UNAVAILABLE": "This item isn't available any more.",
     "privacy": "Privacy",
     "privacy_title": "Your privacy",
-    "privacy_default": "We only ask for what we need to deliver your order: your name, phone number and address (and a location link if you share one).\n\nWe use them to prepare and deliver your order and to contact you about it, for example on WhatsApp. We never sell or share them for advertising.\n\nIf you ask us to tell you when a sold-out item is back, we keep your number (and name, if you give it) only to send you that message.\n\nWhen our driver is on the way to you, you can see his position on the tracking page; it is shown only during your delivery.\n\nTo see or delete your details, contact us on WhatsApp."
+    "privacy_default": "We only ask for what we need to deliver your order: your name, phone number and address (and a location link if you share one).\n\nWe use them to prepare and deliver your order and to contact you about it, for example on WhatsApp. We never sell or share them for advertising.\n\nIf you ask us to tell you when a sold-out item is back, we keep your number (and name, if you give it) only to send you that message.\n\nIf you send a gift, we use the recipient's name, phone number and address only to deliver it.\n\nWhen our driver is on the way to you, you can see his position on the tracking page; it is shown only during your delivery.\n\nTo see or delete your details, contact us on WhatsApp."
   },
   "cart": {
     "title": "Your cart",
@@ -289,7 +289,19 @@
     "err_TOO_MANY_ITEMS": "That's a lot of items! Please contact us on WhatsApp for big orders.",
     "err_INVALID_INPUT": "Some details are missing or too long. Please check the form.",
     "err_PAYMENT_NOT_AVAILABLE": "This payment method isn't available right now. Please choose another one.",
-    "privacy_note": "By placing the order you agree that we use your details to deliver it."
+    "privacy_note": "By placing the order you agree that we use your details to deliver it.",
+    "gift_toggle": "🎁 This is a gift: deliver it to someone else",
+    "gift_help": "Write the recipient's name and phone here, and their address below. Gifts are paid by Whish or OMT, so the recipient pays nothing, and there are no prices on the packing slip.",
+    "f_gift_name": "Recipient's name",
+    "f_gift_phone": "Recipient's phone (for the delivery)",
+    "f_gift_note": "Message for the card (optional)",
+    "gift_note_ph": "e.g. Happy birthday Lara!",
+    "recipient_address": "Recipient's address",
+    "gift_pay_note": "Gifts are paid by Whish or OMT.",
+    "gift_no_area": "Gifts can't be sent to this area yet. Contact us on WhatsApp.",
+    "err_GIFT_NEEDS_PREPAID": "Gifts are paid by Whish or OMT. Please choose one of them.",
+    "err_GIFT_NEEDS_FEE": "Gifts can't be sent to this area yet.",
+    "err_INVALID_RECIPIENT_PHONE": "Please check the recipient's phone number."
   },
   "ord": {
     "title": "Order received",
@@ -304,7 +316,8 @@
     "no_details": "We received your order. For any question, contact us with your order number.",
     "contact_whatsapp": "Contact us on WhatsApp",
     "wa_msg": "Hello! About my order {no}:",
-    "wa_status": "Hello {name}, your order {no} is now {status}. Track it here: {url}"
+    "wa_status": "Hello {name}, your order {no} is now {status}. Track it here: {url}",
+    "gift_for": "🎁 Gift for {name}"
   },
   "status": {
     "NEW": "Received",
@@ -342,7 +355,11 @@
     "collect_fee": "COLLECT fee",
     "fee_tbc_short": "(to confirm)",
     "plus_fee_tbc": "+ delivery fee, to be confirmed",
-    "empty": "Everything is packed. New orders appear here by themselves."
+    "empty": "Everything is packed. New orders appear here by themselves.",
+    "gift_to": "🎁 Gift for {name}",
+    "gift_from": "from {name}",
+    "card": "🎁 Card: {note}",
+    "no_card": "🎁 Gift: no card message"
   },
   "prep": {
     "alerts_title": "New-order alerts",
@@ -454,7 +471,17 @@
     "slip_src_INSTAGRAM": "Instagram / إنستغرام",
     "slip_src_WHATSAPP": "WhatsApp / واتساب",
     "new_customer": "NEW CUSTOMER",
-    "new_customer_hint": "First order from this phone number. Send a quick WhatsApp if something looks odd."
+    "new_customer_hint": "First order from this phone number. Send a quick WhatsApp if something looks odd.",
+    "gift": "🎁 GIFT",
+    "gift_title": "🎁 Gift: deliver to",
+    "gift_buyer": "Buyer (pays and gets the updates)",
+    "gift_note": "Card: {note}",
+    "gift_hint": "Paid by the buyer. The packing slip shows no prices.",
+    "slip_gift": "🎁 GIFT / هدية",
+    "slip_to": "Deliver to / التسليم إلى",
+    "slip_from": "From / من",
+    "slip_card": "Card / البطاقة",
+    "slip_gift_unpaid": "NOT PAID: don't send / غير مدفوع: لا ترسل"
   },
   "trk": {
     "title": "Track your order",
