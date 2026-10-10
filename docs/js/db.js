@@ -77,13 +77,21 @@
     },
   };
 
-  // Show a "TEST" ribbon on every page while pointing at the TEST project.
-  if (cfg.env !== 'LIVE') {
+  // Ribbon on every page that isn't the real shop: "TEST", or "LIVE · not open yet" while LIVE is
+  // being set up before launch. When this browser was switched (?env=...), it links back.
+  const switched = cfg.env !== cfg.defaultEnv && !(cfg.env === 'TEST' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname));
+  if (cfg.env !== 'LIVE' || cfg.defaultEnv !== 'LIVE') {
     document.addEventListener('DOMContentLoaded', () => {
-      const b = document.createElement('div');
-      b.className = 'env-badge';
-      b.textContent = cfg.env;
+      const b = document.createElement(switched ? 'a' : 'div');
+      b.className = 'env-badge' + (cfg.env === 'LIVE' ? ' is-live' : '');
+      b.textContent = cfg.env === 'LIVE' ? 'LIVE · not open yet' : 'TEST';
       b.title = 'Connected to the ' + cfg.env + ' database';
+      if (switched) {
+        const back = new URL(location.href);
+        back.searchParams.set('env', 'default');
+        b.href = back.href;
+        b.textContent += cfg.defaultEnv === 'LIVE' ? ' · back to the real shop' : ' · back to ' + cfg.defaultEnv;
+      }
       document.body.appendChild(b);
     });
   }

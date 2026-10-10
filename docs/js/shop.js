@@ -12,7 +12,9 @@
   }
 
   // ---------- small cache: show the last result instantly, then refresh ----------
-  const CACHE_PREFIX = 'shopcache:v1:';
+  // One cache per project (TEST / LIVE), so switching never shows the other project's items.
+  const CACHE_PREFIX = 'shopcache:v2:' + DB.env + ':';
+  try { Object.keys(localStorage).filter((k) => k.startsWith('shopcache:v1:')).forEach((k) => localStorage.removeItem(k)); } catch { /* blocked */ }
   function cacheGet(key) {
     try {
       const v = JSON.parse(localStorage.getItem(CACHE_PREFIX + key));
