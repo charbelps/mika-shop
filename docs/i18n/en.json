@@ -224,7 +224,7 @@
     "notify_err_ITEM_UNAVAILABLE": "This item isn't available any more.",
     "privacy": "Privacy",
     "privacy_title": "Your privacy",
-    "privacy_default": "We only ask for what we need to deliver your order: your name, phone number and address (and a location link if you share one).\n\nWe use them to prepare and deliver your order and to contact you about it, for example on WhatsApp. We never sell or share them for advertising.\n\nIf you ask us to tell you when a sold-out item is back, we keep your number (and name, if you give it) only to send you that message.\n\nIf you send a gift, we use the recipient's name, phone number and address only to deliver it.\n\nWhen our driver is on the way to you, you can see his position on the tracking page; it is shown only during your delivery.\n\nTo see or delete your details, contact us on WhatsApp."
+    "privacy_default": "We only ask for what we need to deliver your order: your name, phone number and address (and a location link if you share one).\n\nWe use them to prepare and deliver your order and to contact you about it, for example on WhatsApp. We never sell or share them for advertising.\n\nIf you ask us to tell you when a sold-out item is back, we keep your number (and name, if you give it) only to send you that message.\n\nIf you send a gift, we use the recipient's name, phone number and address only to deliver it.\n\nWhen our driver is on the way to you, you can see his position on the tracking page; it is shown only during your delivery. If you tap \"How far is he from me?\", your phone's location is used on your phone only and is never sent to us.\n\nTo see or delete your details, contact us on WhatsApp."
   },
   "cart": {
     "title": "Your cart",
@@ -509,7 +509,24 @@
     "note_RETURNED": "This order was returned. For any question, contact us on WhatsApp.",
     "note_FAILED_ATTEMPT": "We couldn't deliver your order. We'll contact you to arrange a new time.",
     "footer_link": "Track my order",
-    "payment_received": "Payment received ✓"
+    "payment_received": "Payment received ✓",
+    "live_title": "Where is the driver?",
+    "live_wait": "Your order is on its way. When the driver is heading to you, you'll see him here on a map.",
+    "live_coming": "The driver is heading to you now.",
+    "live_no_gps": "Waiting for the driver's location…",
+    "live_stale": "The driver's location isn't available right now.",
+    "live_km": "About {km} km away",
+    "live_near": "Less than 1 km away",
+    "live_straight": "(in a straight line)",
+    "live_now": "Updated just now",
+    "live_min": "Updated {n} min ago",
+    "live_me": "How far is he from me?",
+    "live_me_note": "Uses your phone's location on your phone only. It is never sent to us.",
+    "live_me_denied": "Location isn't allowed on this phone.",
+    "live_driver": "Driver",
+    "live_you": "You",
+    "live_map": "Map showing where the driver is",
+    "live_map_error": "The map couldn't load. It will try again in a moment."
   },
   "no": {
     "title": "New order",
@@ -650,7 +667,20 @@
     "err_BAD_CASH": "Type the cash as a number, e.g. 25 or 0.",
     "err_REASON_REQUIRED": "Choose or write what happened.",
     "err_ORDER_NOT_FOUND": "This order is no longer yours. Ask the shop.",
-    "err_BAD_STATUS_CHANGE": "This order changed meanwhile. The list is updated."
+    "err_BAD_STATUS_CHANGE": "This order changed meanwhile. The list is updated.",
+    "live_go": "Go to this customer (shares your location)",
+    "live_on": "This customer can see you on the map",
+    "live_banner": "Order {no}: the customer sees you on the map",
+    "live_last": "Location sent at {time}",
+    "live_wait_gps": "Finding your location…",
+    "live_stop": "Stop",
+    "live_note": "Only this customer sees it, until you tap Delivered or Not delivered. Keep this page open.",
+    "live_denied": "Location is blocked on this phone, so the customer can't see you. Allow location for this site in the browser settings.",
+    "live_unavailable": "Can't find your location right now. Check that location (GPS) is on.",
+    "live_unsupported": "This browser can't share your location.",
+    "live_started": "Order {no}: the customer can now see you on the map",
+    "live_stopped": "Location sharing stopped",
+    "err_NOT_ON_THE_WAY": "This order isn't on the way. The list is updated."
   },
   "dv": {
     "title": "Delivery",

@@ -403,13 +403,164 @@
           <ol class="trk-steps">${STEPS.map((s, i) => `<li class="${i < idx ? 'done' : i === idx ? 'now' : ''}">
             <span class="dot" aria-hidden="true">${i < idx ? '✓' : ''}</span>
             <span>${esc(s === 'ON_THE_WAY' ? t('trk.on_the_way') : t('status.' + s))}</span></li>`).join('')}</ol>`}
+          ${data.status === 'OUT_FOR_DELIVERY' ? '<div class="trk-live" id="trk-live" aria-live="polite"></div>' : ''}
           <p class="muted">${esc(t('trk.placed', { date: fmt(data.created_at) }))}<br>${esc(t('trk.updated', { date: fmt(data.updated_at) }))}</p>
           ${wa ? `<a class="btn btn-wa btn-block" href="${esc(wa)}" target="_blank" rel="noopener">${esc(t('ord.contact_whatsapp'))}</a>` : ''}
         </section>`;
+      liveMap.stop();
+      if (data.status === 'OUT_FOR_DELIVERY') liveMap.start(no, phone, run);
     }
     form.addEventListener('submit', (e) => { e.preventDefault(); run(); });
     if (form.no.value && form.phone.value) run();
   }
+
+  // ---------- live map on the track page (D3) ----------
+  // While the order is on the way with our driver AND he is heading to this customer, the map
+  // shows his last position (asked every 15 s, only while the page is visible). The distance
+  // comes from the server (pin in the customer's location link) or, when the customer taps
+  // "How far is he from me?", from the phone's own location, computed here and never sent.
+  // Leaflet is loaded only when there is something to show.
+  const LEAFLET = {
+    js: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
+    jsSri: 'sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH',
+    css: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',
+    cssSri: 'sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H',
+  };
+  let leafletP = null;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (leafletP) return leafletP;
+    leafletP = new Promise((resolve, reject) => {
+      const css = document.createElement('link');
+      Object.assign(css, { rel: 'stylesheet', href: LEAFLET.css, integrity: LEAFLET.cssSri, crossOrigin: 'anonymous' });
+      document.head.appendChild(css);
+      const s = document.createElement('script');
+      Object.assign(s, { src: LEAFLET.js, integrity: LEAFLET.jsSri, crossOrigin: 'anonymous' });
+      s.onload = () => (window.L ? resolve(window.L) : reject(new Error('leaflet')));
+      s.onerror = () => { leafletP = null; s.remove(); reject(new Error('leaflet')); };
+      document.head.appendChild(s);
+    });
+    return leafletP;
+  }
+  const kmBetween = (a, b) => {
+    const r = Math.PI / 180;
+    const h = Math.sin(((b.lat - a.lat) * r) / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(((b.lng - a.lng) * r) / 2) ** 2;
+    return 2 * 6371 * Math.asin(Math.sqrt(h));
+  };
+
+  const liveMap = (() => {
+    const POLL = 15000;
+    let st = null;   // { no, phone, onEnd, timer, map, pin, ring, me, mePin, last, fitted }
+
+    function stop() {
+      if (!st) return;
+      clearTimeout(st.timer);
+      if (st.map) st.map.remove();
+      st = null;
+    }
+    function start(no, phone, onEnd) {
+      stop();
+      st = { no, phone, onEnd, timer: null, map: null, pin: null, ring: null, me: null, mePin: null, last: null, fitted: false };
+      tick();
+    }
+    function schedule() {
+      if (!st) return;
+      clearTimeout(st.timer);
+      if (document.visibilityState === 'visible') st.timer = setTimeout(tick, POLL);
+    }
+    async function tick() {
+      const my = st;
+      if (!my) return;
+      const { data, error } = await DB.client.rpc('track_live', { p_order_no: my.no, p_phone: my.phone });
+      if (st !== my) return;   // the customer searched again meanwhile
+      if (error) { schedule(); return; }   // network hiccup: keep what is shown, try again
+      if (!data || data.status !== 'OUT_FOR_DELIVERY') { const end = my.onEnd; stop(); if (data) end(); return; }
+      my.last = data;
+      await draw(data);
+      schedule();
+    }
+
+    function box() { return document.getElementById('trk-live'); }
+    async function draw(d) {
+      const el = box();
+      if (!el) { stop(); return; }
+      if (!d.sharing || !d.position) {
+        if (st.map) { st.map.remove(); st.map = null; st.pin = null; st.ring = null; st.mePin = null; st.fitted = false; }
+        el.innerHTML = `<p class="trk-live-msg">🚚 ${esc(!d.sharing ? t('trk.live_wait')
+          : t('trk.live_coming') + ' ' + t(d.stale ? 'trk.live_stale' : 'trk.live_no_gps'))}</p>`;
+        return;
+      }
+      if (!el.querySelector('.trk-map')) {
+        el.innerHTML = `<h3 class="trk-live-title">${esc(t('trk.live_title'))}</h3>
+          <p class="trk-live-dist"></p>
+          <div class="trk-map" dir="ltr" role="img" aria-label="${esc(t('trk.live_map'))}"></div>
+          <p class="trk-live-upd muted"></p>
+          <div class="trk-live-me"></div>`;
+      }
+      const pos = [d.lat, d.lng];
+      try {
+        const L = await loadLeaflet();
+        if (!st || !box()) return;
+        if (!st.map) {
+          st.map = L.map(el.querySelector('.trk-map'), { scrollWheelZoom: false }).setView(pos, 15);
+          st.map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+          }).addTo(st.map);
+          st.pin = L.marker(pos, { title: t('trk.live_driver'), alt: t('trk.live_driver'), keyboard: false,
+            icon: L.divIcon({ className: 'trk-pin', html: '<span aria-hidden="true">🚚</span>', iconSize: [42, 42], iconAnchor: [21, 21] }) }).addTo(st.map);
+          st.ring = L.circle(pos, { radius: Math.max(d.accuracy || 0, 1), stroke: false, fillOpacity: 0.12, className: 'trk-ring' }).addTo(st.map);
+          if (st.me) addMe(L);
+        } else {
+          st.pin.setLatLng(pos);
+          st.ring.setLatLng(pos).setRadius(Math.max(d.accuracy || 0, 1));
+          if (!st.me && !st.map.getBounds().pad(-0.15).contains(pos)) st.map.panTo(pos);
+        }
+        el.querySelector('.trk-map').classList.remove('trk-map-error');
+      } catch {
+        el.querySelector('.trk-map').classList.add('trk-map-error');
+        el.querySelector('.trk-map').textContent = t('trk.live_map_error');
+      }
+      // distance: from the server (the customer's pin), else from this phone if the customer asked
+      const km = d.distance_km != null ? Number(d.distance_km) : st.me ? kmBetween(st.me, { lat: d.lat, lng: d.lng }) : null;
+      el.querySelector('.trk-live-dist').innerHTML = km == null ? `<strong>${esc(t('trk.live_coming'))}</strong>`
+        : `<strong>${esc(km < 1 ? t('trk.live_near') : t('trk.live_km', { km: (Math.round(km * 10) / 10).toString() }))}</strong> <span class="muted">${esc(t('trk.live_straight'))}</span>`;
+      el.querySelector('.trk-live-upd').textContent = d.age_s < 60 ? t('trk.live_now') : t('trk.live_min', { n: Math.round(d.age_s / 60) });
+      const me = el.querySelector('.trk-live-me');
+      if (d.distance_km == null && !st.me && 'geolocation' in navigator) {
+        if (!me.querySelector('button')) {
+          me.innerHTML = `<button type="button" class="btn btn-block">📍 ${esc(t('trk.live_me'))}</button><p class="hint">${esc(t('trk.live_me_note'))}</p>`;
+          me.querySelector('button').addEventListener('click', askMe);
+        }
+      } else if (!me.querySelector('.trk-me-err')) me.innerHTML = '';
+    }
+    function addMe(L) {
+      if (!st.map || st.mePin) return;
+      st.mePin = L.marker([st.me.lat, st.me.lng], { title: t('trk.live_you'), alt: t('trk.live_you'), keyboard: false,
+        icon: L.divIcon({ className: 'trk-pin trk-pin-me', html: `<span>${esc(t('trk.live_you'))}</span>`, iconSize: [44, 26], iconAnchor: [22, 13] }) }).addTo(st.map);
+      if (!st.fitted) { st.map.fitBounds([[st.me.lat, st.me.lng], st.pin.getLatLng()], { padding: [40, 40], maxZoom: 16 }); st.fitted = true; }
+    }
+    function askMe(e) {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      navigator.geolocation.getCurrentPosition((p) => {
+        if (!st) return;
+        st.me = { lat: p.coords.latitude, lng: p.coords.longitude };   // stays in this page only
+        if (window.L) addMe(window.L);
+        if (st.last) draw(st.last);
+      }, () => {
+        btn.disabled = false;
+        const me = box() && box().querySelector('.trk-live-me');
+        if (me) me.innerHTML = `<p class="hint trk-me-err">${esc(t('trk.live_me_denied'))}</p>`;
+      }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!st) return;
+      if (document.visibilityState === 'visible') tick(); else clearTimeout(st.timer);
+    });
+    return { start, stop };
+  })();
 
   window.Checkout = { initCart, initCheckout, initOrder, initTrack, normalizePhone };
 })();

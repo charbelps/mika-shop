@@ -300,6 +300,20 @@ input[dir=ltr] { text-align: start; }
 .trk-steps li.done::after { background: var(--ok); }
 .trk-steps li.now { color: var(--text); font-weight: 700; }
 .trk-steps li.now .dot { border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-soft); }
+/* live map while the driver is heading to the customer (D3) */
+.trk-live { margin-block: 0 1rem; padding: .9rem; border-radius: var(--radius); background: var(--brand-soft); }
+.trk-live-msg { margin: 0; line-height: 1.5; }
+.trk-live-title { margin: 0 0 .25rem; font-size: 1.1rem; }
+.trk-live-dist { margin: 0 0 .6rem; font-size: 1.05rem; }
+.trk-live-upd { margin: .4rem 0 0; font-size: .85rem; }
+.trk-live-me { margin-block-start: .6rem; }
+.trk-live-me .hint { margin: .35rem 0 0; font-size: .82rem; color: var(--muted); }
+.trk-map { height: 280px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--photo-bg); z-index: 0; }
+.trk-map-error { display: flex; align-items: center; justify-content: center; padding: 1rem; text-align: center; color: var(--muted); }
+.trk-pin { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--surface);
+           border: 3px solid var(--brand); box-shadow: 0 2px 8px rgba(var(--shadow), .3); font-size: 22px; line-height: 1; }
+.trk-pin-me { border-radius: 999px; border-color: var(--sale); background: var(--sale);   /* --sale: white text stays readable (AA) */ color: #fff; font: 700 12px/1 var(--font); }
+.trk-ring { fill: var(--brand); }
 
 /* ---------- order confirmation (step 7) ---------- */
 .ord-head { text-align: center; padding-block: 1rem 1.25rem; }

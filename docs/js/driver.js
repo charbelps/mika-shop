@@ -5,6 +5,10 @@
 // Every move goes through driver_delivery (the database checks it is his order and a valid move).
 // What to collect = DB.amountToCollect (the same rule as the packing slip and cards).
 // Live: his orders change on the screen by themselves (Realtime + reload when the phone wakes up).
+// Live location (D3): "Go to this customer" (or starting / retrying an order) lets THAT customer
+// see him on the map of the track page, one customer at a time, until Delivered / Not delivered.
+// The page must stay open (a web page can't share its location in the background), so the screen
+// is kept on while sharing.
 (async function () {
   const me = await StaffAuth.require(['DRIVER']);
   const t = I18n.t;
@@ -55,6 +59,9 @@
     if (my !== req) return;
     if (error) { $('#dr-todo').innerHTML = `<div class="alert alert-error">${esc(errText(error))}</div>`; return; }
     orders = data || [];
+    // the shared order is no longer on the way (delivered, back at the shop...): the database
+    // already deleted the position, stop the GPS here too
+    if (gps.orderId && !orders.some((o) => o.id === gps.orderId && o.status === 'OUT_FOR_DELIVERY')) endSharing();
     render();
   }
 
@@ -105,6 +112,9 @@
       <details class="dr-items"><summary>${esc(t('drv.items', { n }))}</summary>
         <ul>${items.map((i) => `<li dir="auto">${i.qty} × ${esc(itemName(i))}</li>`).join('')}</ul></details>
       ${o.status === 'PACKED' ? `<div class="dr-acts"><button type="button" class="btn btn-primary" data-act="START">▶ ${esc(t('drv.start'))}</button></div>` : ''}
+      ${o.status === 'OUT_FOR_DELIVERY' ? (o.id === gps.orderId
+        ? `<p class="dr-sharing">📍 ${esc(t('drv.live_on'))}</p>`
+        : `<button type="button" class="btn btn-block dr-go" data-act="GO">📍 ${esc(t('drv.live_go'))}</button>`) : ''}
       ${o.status === 'OUT_FOR_DELIVERY' ? `<div class="dr-acts">
         <button type="button" class="btn btn-primary" data-act="DELIVERED">✓ ${esc(t('drv.delivered'))}</button>
         <button type="button" class="btn" data-act="FAILED">✗ ${esc(t('drv.not_delivered'))}</button></div>` : ''}
@@ -125,6 +135,99 @@
       <span>${esc(t('drv.n_done', { n: done.length }))}</span><span>${esc(t('drv.cash_today'))} ${money(cash)}</span>`;
     $('#dr-todo').innerHTML = todo.length ? todo.map(card).join('') : `<div class="pk-empty"><span aria-hidden="true">✓</span><p>${esc(t('drv.none'))}</p></div>`;
     $('#dr-done').innerHTML = done.length ? done.map(card).join('') : `<p class="hint">${esc(t('drv.none_done'))}</p>`;
+    renderGps();
+  }
+
+  // ---------- live location (D3) ----------
+  const gps = { orderId: null, watch: null, lastSent: 0, lastPos: null, sentAt: null, problem: '' };
+
+  function renderGps() {
+    const box = $('#dr-gps');
+    const o = orders.find((x) => x.id === gps.orderId);
+    const problem = gps.problem ? `<p class="dr-gps-problem">${esc(t('drv.live_' + gps.problem))}</p>` : '';
+    if (!gps.orderId) { box.hidden = !problem; box.className = 'dr-gps off'; box.innerHTML = problem; return; }
+    box.hidden = false;
+    box.className = 'dr-gps';
+    box.innerHTML = `<div class="dr-gps-row"><p><strong>📍 ${esc(t('drv.live_banner', { no: o ? o.order_no : '' }))}</strong><br>
+        <small>${esc(gps.sentAt ? t('drv.live_last', { time: time(gps.sentAt.toISOString()) }) : t('drv.live_wait_gps'))}</small></p>
+      <button type="button" class="btn btn-small" data-act="STOP">${esc(t('drv.live_stop'))}</button></div>
+      <p class="dr-gps-note">${esc(t('drv.live_note'))}</p>${problem}`;
+  }
+
+  const meters = (a, b) => {
+    const r = Math.PI / 180, x = (b.lng - a.lng) * r * Math.cos(((a.lat + b.lat) / 2) * r), y = (b.lat - a.lat) * r;
+    return Math.sqrt(x * x + y * y) * 6371000;
+  };
+
+  async function onPos(p) {
+    if (!gps.orderId) return;
+    const now = Date.now();
+    const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
+    const moved = gps.lastPos ? meters(gps.lastPos, pos) : Infinity;
+    if (gps.problem) { gps.problem = ''; renderGps(); }
+    // about every 15 s, sooner (5 s) when he moved 50 m: enough for a map, light on the battery
+    if (now - gps.lastSent < 5000 || (now - gps.lastSent < 15000 && moved < 50)) return;
+    gps.lastSent = now;
+    gps.lastPos = pos;
+    const { data, error } = await DB.client.rpc('driver_live_update', { p_lat: pos.lat, p_lng: pos.lng, p_accuracy: Math.round(p.coords.accuracy || 0) });
+    if (error) return;   // network hiccup: the next position tries again
+    if (data && data.sharing === false) { endSharing(); render(); return; }   // the delivery ended elsewhere
+    gps.sentAt = new Date();
+    renderGps();
+  }
+  function onPosError(e) {
+    gps.problem = e && e.code === 1 ? 'denied' : 'unavailable';
+    if (e && e.code === 1) stopWatch();   // blocked: nothing more will come until he allows it
+    renderGps();
+  }
+  function startWatch() {
+    if (gps.watch != null) return;
+    if (!('geolocation' in navigator)) { gps.problem = 'unsupported'; renderGps(); return; }
+    gps.lastSent = 0;
+    gps.watch = navigator.geolocation.watchPosition(onPos, onPosError, { enableHighAccuracy: true, maximumAge: 10000, timeout: 30000 });
+  }
+  function stopWatch() {
+    if (gps.watch != null && 'geolocation' in navigator) navigator.geolocation.clearWatch(gps.watch);
+    gps.watch = null;
+    gps.lastPos = null;
+  }
+  // stop locally (the database side is already gone or is being stopped)
+  function endSharing() {
+    stopWatch();
+    gps.orderId = null;
+    gps.sentAt = null;
+    gps.problem = '';
+    keepScreenOn(false);
+  }
+
+  async function share(o) {
+    const { error } = await DB.client.rpc('driver_live_start', { p_order_id: o.id });
+    if (error) { toast(errText(error), true); return; }
+    gps.orderId = o.id;
+    gps.sentAt = null;
+    gps.problem = '';
+    stopWatch();
+    startWatch();
+    keepScreenOn(true);
+    toast(t('drv.live_started', { no: o.order_no }));
+    render();
+  }
+  async function stopSharing() {
+    const { error } = await DB.client.rpc('driver_live_stop');
+    if (error) { toast(errText(error), true); return; }
+    endSharing();
+    toast(t('drv.live_stopped'));
+    render();
+  }
+  // after a reload: was he sharing an order? carry on
+  async function resumeSharing() {
+    const { data } = await DB.client.rpc('driver_live_mine');
+    if (data && data.order_id && orders.some((o) => o.id === data.order_id && o.status === 'OUT_FOR_DELIVERY')) {
+      gps.orderId = data.order_id;
+      startWatch();
+      keepScreenOn(true);
+      render();
+    }
   }
 
   // ---------- actions ----------
@@ -135,6 +238,8 @@
   async function send(o, action, extra) {
     const { error } = await DB.client.rpc('driver_delivery', { p_order_id: o.id, p_action: action, ...extra });
     if (error) { toast(errText(error), true); return false; }
+    // delivered / not delivered: the database deletes the position, the GPS stops here
+    if (action !== 'START' && o.id === gps.orderId) endSharing();
     toast(t(action === 'START' ? 'drv.started' : action === 'DELIVERED' ? 'drv.saved_delivered' : 'drv.saved_failed', { no: o.order_no }));
     await load();
     return true;
@@ -187,29 +292,46 @@
     }
   });
 
-  document.querySelector('.dr-main').addEventListener('click', (e) => {
+  document.querySelector('.dr-main').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
+    if (b.dataset.act === 'STOP') { b.disabled = true; await stopSharing(); b.disabled = false; return; }
     const o = orders.find((x) => x.id === Number(b.closest('[data-id]').dataset.id));
     if (!o) return;
-    if (b.dataset.act === 'START') { b.disabled = true; send(o, 'START').finally(() => { b.disabled = false; }); }
-    else ask(o, b.dataset.act);
+    if (b.dataset.act === 'START') {
+      // taking it out / trying again = heading to this customer: they can see him from now on
+      b.disabled = true;
+      if (await send(o, 'START')) await share(o);
+      b.disabled = false;
+    } else if (b.dataset.act === 'GO') {
+      b.disabled = true;
+      await share(o);
+      b.disabled = false;
+    } else ask(o, b.dataset.act);
   });
 
   // ---------- keep the screen on (phones that support it) ----------
+  // His button, and automatically while sharing his location (the page must stay open for that).
   const wakeBtn = $('#dr-wake');
   let wake = null;
+  let wantWake = false;   // what he chose (or sharing chose); the phone drops the lock when the screen goes off
+  const wakeLabel = () => { wakeBtn.textContent = wake ? '☀ ' + t('drv.keep_on_on') : '☀ ' + t('drv.keep_on'); };
+  async function keepScreenOn(on) {
+    wantWake = on;
+    if (!('wakeLock' in navigator)) return;
+    try {
+      if (!on && wake) { await wake.release(); wake = null; }
+      else if (on && !wake && document.visibilityState === 'visible') {
+        wake = await navigator.wakeLock.request('screen');
+        wake.addEventListener('release', () => { wake = null; wakeLabel(); });
+      }
+    } catch { wake = null; }
+    wakeLabel();
+  }
   if ('wakeLock' in navigator) {
     wakeBtn.hidden = false;
-    const label = () => { wakeBtn.textContent = wake ? '☀ ' + t('drv.keep_on_on') : '☀ ' + t('drv.keep_on'); };
-    label();
-    wakeBtn.addEventListener('click', async () => {
-      try {
-        if (wake) { await wake.release(); wake = null; }
-        else { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; label(); }); }
-      } catch { wake = null; }
-      label();
-    });
+    wakeLabel();
+    wakeBtn.addEventListener('click', () => keepScreenOn(!wake));
   }
 
   // ---------- live ----------
@@ -222,8 +344,15 @@
       live.textContent = ok ? '● ' + t('prep.live') : t('prep.offline');
       live.className = 'pill ' + (ok ? 'pill-ok' : 'pill-warn');
     });
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    load();
+    // back from the lock screen / another app: some phones stopped the GPS and the screen lock
+    if (gps.orderId) { stopWatch(); startWatch(); }
+    if (wantWake) keepScreenOn(true);
+  });
 
-  load();
-  window.Driver = { load, collect, mapLink };
+  await load();
+  resumeSharing();
+  window.Driver = { load, collect, mapLink, gps };
 })();

@@ -37,3 +37,16 @@
 .dr-reasons .chip-btn[aria-pressed=true] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
 #dr-cash { font-size: 1.6rem; min-height: 60px; text-align: center; font-weight: 700; }
 .dr-expect { font-size: 1.05rem; margin: 0 0 .75rem; }
+
+/* ---------- live location (D3) ---------- */
+.dr-gps { position: sticky; top: 64px; z-index: 5;   /* just under the sticky top bar (56px) */ margin-block-end: 1rem; padding: .75rem .9rem; border-radius: 14px;
+          background: var(--brand); color: var(--brand-ink); box-shadow: 0 2px 10px rgba(34, 38, 26, .18); }
+.dr-gps.off { background: var(--danger-soft); color: var(--danger); box-shadow: none; position: static; }
+.dr-gps-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.dr-gps-row p { margin: 0; line-height: 1.35; overflow-wrap: anywhere; }
+.dr-gps-row .btn { flex: none; min-height: 44px; }
+.dr-gps-note { margin: .4rem 0 0; font-size: .85rem; opacity: .9; }
+.dr-gps-problem { margin: .5rem 0 0; padding: .45rem .6rem; border-radius: var(--radius); background: var(--danger-soft); color: var(--danger); font-weight: 600; }
+.dr-gps.off .dr-gps-problem { margin: 0; padding: 0; background: none; }
+.dr-go { min-height: 54px; font-size: 1.05rem; border-color: var(--brand); color: var(--brand); font-weight: 700; }
+.dr-sharing { margin: 0; padding: .55rem .75rem; border-radius: var(--radius); background: var(--ok-soft); color: var(--ok); font-weight: 700; }
